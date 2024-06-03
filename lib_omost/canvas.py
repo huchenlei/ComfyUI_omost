@@ -133,6 +133,7 @@ class OmostCanvasCondition(TypedDict):
     mask: np.ndarray
     prefixes: list[str]
     suffixes: list[str]
+    rect: tuple[int, int, int, int]
 
 
 class OmostCanvasOutput(TypedDict):
@@ -251,6 +252,7 @@ class Canvas:
             m[a:b, c:d] = 1.0
             bag_of_conditions.append(dict(
                 mask=m,
+                rect=component['rect'],
                 prefixes=component['prefixes'],
                 suffixes=component['suffixes']
             ))

@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import Literal, Tuple, TypedDict, NamedTuple
 import sys
 import logging
-import numpy as np
 from typing_extensions import NotRequired
 
 import torch
@@ -10,7 +9,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 import comfy.model_management
 from comfy.sd import CLIP
-from nodes import CLIPTextEncode, ConditioningSetMask
+from nodes import CLIPTextEncode, ConditioningSetAreaPercentage
 from .lib_omost.canvas import (
     Canvas as OmostCanvas,
     OmostCanvasOutput,
@@ -234,7 +233,7 @@ class OmostLayoutCondNode:
     FUNCTION = "layout_cond"
 
     def __init__(self):
-        self.cond_set_mask_node = ConditioningSetMask()
+        self.cond_set_area_node = ConditioningSetAreaPercentage()
         self.clip_text_encode_node = CLIPTextEncode()
 
     def encode_bag_of_subprompts(
@@ -263,20 +262,27 @@ class OmostLayoutCondNode:
         positive: ComfyUIConditioning | None = None,
     ):
         """Layout conditioning"""
-        positive = positive or []
-        omost_conds: list[ComfyUIConditioning] = [
-            self.cond_set_mask_node.append(
-                conditioning=self.encode_bag_of_subprompts(
-                    clip, canvas_cond["prefixes"], canvas_cond["suffixes"]
-                ),
-                # Mask in [C=1, H, W] format.
-                mask=numpy2pytorch([canvas_cond["mask"][np.newaxis, :, :]])[0],
+        CANVAS_SIZE = 90
+        positive = positive.copy() or []
+
+        for canvas_cond in canvas_conds:
+            cond: ComfyUIConditioning = self.encode_bag_of_subprompts(
+                clip, canvas_cond["prefixes"], canvas_cond["suffixes"]
+            )
+            # Set area cond
+            a, b, c, d = canvas_cond["rect"]
+            cond: ComfyUIConditioning = self.cond_set_area_node.append(
+                cond,
+                x=a / CANVAS_SIZE,
+                y=c / CANVAS_SIZE,
+                width=(b - a) / CANVAS_SIZE,
+                height=(d - c) / CANVAS_SIZE,
                 strength=1.0,
-                set_cond_area="mask bounds",
             )[0]
-            for canvas_cond in canvas_conds
-        ]
-        return (positive + [cond for omost_cond in omost_conds for cond in omost_cond],)
+
+            positive.extend(cond)
+
+        return (positive,)
 
 
 NODE_CLASS_MAPPINGS = {
