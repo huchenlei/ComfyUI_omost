@@ -126,7 +126,8 @@ class OmostLLMChatNode:
 
     RETURN_TYPES = (
         "OMOST_CONVERSATION",
-        "OMOST_CANVAS",
+        "IMAGE",
+        "OMOST_CANVAS_CONDITIONING",
     )
     FUNCTION = "run_llm"
 
@@ -183,34 +184,10 @@ class OmostLLMChatNode:
             user_conversation_item,
             {"role": "assistant", "content": generated_text},
         ]
-
-        return (
-            output_conversation,
-            OmostCanvas.from_bot_response(generated_text),
-        )
-
-
-class OmostCanvasRenderNode:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "canvas": ("OMOST_CANVAS",),
-            }
-        }
-
-    RETURN_TYPES = (
-        "IMAGE",
-        "OMOST_CANVAS_CONDITIONING",
-    )
-    FUNCTION = "render_canvas"
-
-    def render_canvas(
-        self, canvas: OmostCanvas
-    ) -> Tuple[torch.Tensor, list[OmostCanvasCondition]]:
-        """Render canvas"""
+        canvas = OmostCanvas.from_bot_response(generated_text)
         canvas_output: OmostCanvasOutput = canvas.process()
         return (
+            output_conversation,
             numpy2pytorch(imgs=[canvas_output["initial_latent"]]),
             canvas_output["bag_of_conditions"],
         )
@@ -288,13 +265,11 @@ class OmostLayoutCondNode:
 NODE_CLASS_MAPPINGS = {
     "OmostLLMLoaderNode": OmostLLMLoaderNode,
     "OmostLLMChatNode": OmostLLMChatNode,
-    "OmostCanvasRenderNode": OmostCanvasRenderNode,
     "OmostLayoutCondNode": OmostLayoutCondNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "OmostLLMLoaderNode": "Omost LLM Loader",
     "OmostLLMChatNode": "Omost LLM Chat",
-    "OmostCanvasRenderNode": "Omost Canvas Render",
     "OmostLayoutCondNode": "Omost Layout Cond",
 }
