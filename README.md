@@ -7,4 +7,4 @@ ComfyUI implementation of [Omost](https://github.com/lllyasviel/Omost).
 
 ### TODOs
 - Wire layout conditions to comfyui's regional prompt system
-  
+- Add a progress bar to the Chat node
