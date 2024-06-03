@@ -144,13 +144,13 @@ class Canvas:
     @staticmethod
     def from_bot_response(response: str):
         matched = re.search(r'```python\n(.*?)\n```', response, re.DOTALL)
-        assert matched, 'Response does not contain codes!'
+        assert matched, f'Response does not contain codes!\n{response}'
         code_content = matched.group(1)
-        assert 'canvas = Canvas()' in code_content, 'Code block must include valid canvas var!'
+        assert 'canvas = Canvas()' in code_content, f'Code block must include valid canvas var!\n{response}'
         local_vars = {'Canvas': Canvas}
         exec(code_content, {}, local_vars)
         canvas = local_vars.get('canvas', None)
-        assert isinstance(canvas, Canvas), 'Code block must produce valid canvas var!'
+        assert isinstance(canvas, Canvas), f'Code block must produce valid canvas var!\n{response}'
         return canvas
 
     def __init__(self):

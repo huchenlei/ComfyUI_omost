@@ -9,13 +9,14 @@ from .lib_omost.canvas import (
     Canvas as OmostCanvas,
     OmostCanvasOutput,
     OmostCanvasCondition,
+    system_prompt,
 )
 from .lib_omost.utils import numpy2pytorch
 
 
 # Type definitions.
 class OmostConversationItem(TypedDict):
-    role: Literal["user", "assistant"]
+    role: Literal["system", "user", "assistant"]
     content: str
 
 
@@ -114,32 +115,50 @@ class OmostLLMChatNode:
         llm_model: AutoModelForCausalLM = llm.model
 
         conversation = conversation or []  # Default to empty list
-        new_conversation = conversation + [{"role": "user", "content": text}]
+        system_conversation_item: OmostConversationItem = {
+            "role": "system",
+            "content": system_prompt,
+        }
+        user_conversation_item: OmostConversationItem = {
+            "role": "user",
+            "content": text,
+        }
+        input_conversation: list[OmostConversationItem] = [
+            system_conversation_item,
+            *conversation,
+            user_conversation_item,
+        ]
 
         input_ids: torch.Tensor = llm_tokenizer.apply_chat_template(
-            new_conversation, return_tensors="pt", add_generation_prompt=True
+            input_conversation, return_tensors="pt", add_generation_prompt=True
         ).to(llm_model.device)
+        input_length = input_ids.shape[1]
 
-        output_ids = llm_model.generate(
+        output_ids: torch.Tensor = llm_model.generate(
             input_ids=input_ids,
             max_new_tokens=max_new_tokens,
             temperature=temperature,
             top_p=top_p,
             do_sample=temperature != 0,
         )
-
+        generated_ids = output_ids[:, input_length:]
         generated_text: str = llm_tokenizer.decode(
-            output_ids[0],
+            generated_ids[0],
             skip_special_tokens=True,
             skip_prompt=True,
             timeout=10,
         )
 
-        final_conversation = new_conversation + [
-            {"role": "assistant", "content": generated_text}
+        output_conversation = [
+            *conversation,
+            user_conversation_item,
+            {"role": "assistant", "content": generated_text},
         ]
 
-        return (final_conversation, OmostCanvas.from_bot_response(generated_text))
+        return (
+            output_conversation,
+            OmostCanvas.from_bot_response(generated_text),
+        )
 
 
 class OmostCanvasRenderNode:
@@ -163,7 +182,8 @@ class OmostCanvasRenderNode:
         """Render canvas"""
         canvas_output: OmostCanvasOutput = canvas.process()
         return (
-            numpy2pytorch(canvas_output["initial_latent"]),
+            # ComfyUI requires [B, H, W, C] format.
+            numpy2pytorch(imgs=[canvas_output["initial_latent"]]).movedim(1, 3),
             canvas_output["bag_of_conditions"],
         )
 
