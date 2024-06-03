@@ -130,7 +130,6 @@ def binary_nonzero_positions(n, offset=0):
 
 
 class OmostCanvasCondition(TypedDict):
-    mask: np.ndarray
     prefixes: list[str]
     suffixes: list[str]
     rect: tuple[int, int, int, int]
@@ -243,15 +242,11 @@ class Canvas:
         # compute conditions
 
         bag_of_conditions = [
-            dict(mask=np.ones(shape=(90, 90), dtype=np.float32), prefixes=self.prefixes, suffixes=self.suffixes)
+            dict(rect=(0, 90, 0, 90), prefixes=self.prefixes, suffixes=self.suffixes)
         ]
 
-        for i, component in enumerate(self.components):
-            a, b, c, d = component['rect']
-            m = np.zeros(shape=(90, 90), dtype=np.float32)
-            m[a:b, c:d] = 1.0
+        for component in self.components:
             bag_of_conditions.append(dict(
-                mask=m,
                 rect=component['rect'],
                 prefixes=component['prefixes'],
                 suffixes=component['suffixes']

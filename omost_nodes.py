@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 from typing import Literal, Tuple, TypedDict, NamedTuple
 import sys
 import logging
@@ -240,7 +241,8 @@ class OmostLayoutCondNode:
     ):
         """Layout conditioning"""
         CANVAS_SIZE = 90
-        positive = positive.copy() or []
+        positive: ComfyUIConditioning = positive or []
+        positive = positive.copy()
 
         for canvas_cond in canvas_conds:
             cond: ComfyUIConditioning = self.encode_bag_of_subprompts(
@@ -262,14 +264,33 @@ class OmostLayoutCondNode:
         return (positive,)
 
 
+class OmostLoadCanvasConditioningNode:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "json_str": ("STRING", {"multiline": True}),
+            }
+        }
+
+    RETURN_TYPES = ("OMOST_CANVAS_CONDITIONING",)
+    FUNCTION = "load_canvas"
+
+    def load_canvas(self, json_str: str) -> Tuple[list[OmostCanvasCondition]]:
+        """Load canvas from file"""
+        return (json.loads(json_str),)
+
+
 NODE_CLASS_MAPPINGS = {
     "OmostLLMLoaderNode": OmostLLMLoaderNode,
     "OmostLLMChatNode": OmostLLMChatNode,
     "OmostLayoutCondNode": OmostLayoutCondNode,
+    "OmostLoadCanvasConditioningNode": OmostLoadCanvasConditioningNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "OmostLLMLoaderNode": "Omost LLM Loader",
     "OmostLLMChatNode": "Omost LLM Chat",
     "OmostLayoutCondNode": "Omost Layout Cond",
+    "OmostLoadCanvasConditioningNode": "Omost Load Canvas Conditioning",
 }
