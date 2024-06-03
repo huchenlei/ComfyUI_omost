@@ -1,10 +1,15 @@
 from __future__ import annotations
 from typing import Literal, Tuple, TypedDict, NamedTuple
+import numpy as np
+from typing_extensions import NotRequired
+from logging import Logger
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 import comfy.model_management
+from comfy.sd import CLIP
+from nodes import CLIPTextEncode, ConditioningSetMask
 from .lib_omost.canvas import (
     Canvas as OmostCanvas,
     OmostCanvasOutput,
@@ -12,6 +17,9 @@ from .lib_omost.canvas import (
     system_prompt,
 )
 from .lib_omost.utils import numpy2pytorch
+
+
+logger = Logger(__name__, level="DEBUG")
 
 
 # Type definitions.
@@ -26,6 +34,15 @@ OmostConversation = list[OmostConversationItem]
 class OmostLLM(NamedTuple):
     model: AutoModelForCausalLM
     tokenizer: AutoTokenizer
+
+
+ComfyUIConditioning = list  # Dummy type definitions for ComfyUI
+CLIPTokensWithWeight = list[Tuple[int, float]]
+
+
+class CLIPTokens(TypedDict):
+    l: list[CLIPTokensWithWeight]
+    g: NotRequired[list[CLIPTokensWithWeight]]
 
 
 # End of type definitions.
@@ -182,8 +199,7 @@ class OmostCanvasRenderNode:
         """Render canvas"""
         canvas_output: OmostCanvasOutput = canvas.process()
         return (
-            # ComfyUI requires [B, H, W, C] format.
-            numpy2pytorch(imgs=[canvas_output["initial_latent"]]).movedim(1, 3),
+            numpy2pytorch(imgs=[canvas_output["initial_latent"]]),
             canvas_output["bag_of_conditions"],
         )
 
@@ -193,20 +209,61 @@ class OmostLayoutCondNode:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "positive": ("CONDITIONING",),
-                "negative": ("CONDITIONING",),
                 "canvas_conds": ("OMOST_CANVAS_CONDITIONING",),
-            }
+                "clip": ("CLIP",),
+            },
+            "optional": {
+                "positive": ("CONDITIONING",),
+            },
         }
 
-    RETURN_TYPES = (
-        "CONDITIONING",
-        "CONDITIONING",
-    )
+    RETURN_TYPES = ("CONDITIONING",)
     FUNCTION = "layout_cond"
 
-    def layout_cond(self, positive, negative, canvas_conds: list[OmostCanvasCondition]):
+    def __init__(self):
+        self.cond_set_mask_node = ConditioningSetMask()
+        self.clip_text_encode_node = CLIPTextEncode()
+
+    def encode_bag_of_subprompts(
+        self, clip: CLIP, prefixes: list[str], suffixes: list[str]
+    ) -> ComfyUIConditioning:
+        """Simplified way to encode bag of subprompts without omost's greedy approach."""
+        final_cond = []
+
+        logger.debug("Start encoding bag of subprompts")
+        for target in suffixes:
+            complete_prompt = "".join(prefixes + [target])
+            logger.debug(f"Encoding prompt: {complete_prompt}")
+            cond: ComfyUIConditioning = self.clip_text_encode_node.encode(
+                clip, complete_prompt
+            )[0]
+            final_cond.extend(cond)
+        logger.debug(
+            "End encoding bag of subprompts. Total conditions: %d", len(final_cond)
+        )
+        return final_cond
+
+    def layout_cond(
+        self,
+        canvas_conds: list[OmostCanvasCondition],
+        clip: CLIP,
+        positive: ComfyUIConditioning | None = None,
+    ):
         """Layout conditioning"""
+        positive = positive or []
+        omost_conds: list[ComfyUIConditioning] = [
+            self.cond_set_mask_node.append(
+                conditioning=self.encode_bag_of_subprompts(
+                    clip, canvas_cond["prefixes"], canvas_cond["suffixes"]
+                ),
+                # Mask in [C=1, H, W] format.
+                mask=numpy2pytorch([canvas_cond["mask"][np.newaxis, :, :]])[0],
+                strength=1.0,
+                set_cond_area="mask bounds",
+            )[0]
+            for canvas_cond in canvas_conds
+        ]
+        return (positive + [cond for omost_cond in omost_conds for cond in omost_cond],)
 
 
 NODE_CLASS_MAPPINGS = {
