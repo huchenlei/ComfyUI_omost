@@ -1,8 +1,9 @@
 from __future__ import annotations
 from typing import Literal, Tuple, TypedDict, NamedTuple
+import sys
+import logging
 import numpy as np
 from typing_extensions import NotRequired
-from logging import Logger
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -19,7 +20,19 @@ from .lib_omost.canvas import (
 from .lib_omost.utils import numpy2pytorch
 
 
-logger = Logger(__name__, level="DEBUG")
+def create_logger(level=logging.INFO):
+    logger = logging.getLogger(__name__)
+    logger.setLevel(level)
+    if not logger.handlers:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        )
+        logger.addHandler(handler)
+    return logger
+
+
+logger = create_logger(level=logging.DEBUG)
 
 
 # Type definitions.
