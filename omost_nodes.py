@@ -5,7 +5,12 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 import comfy.model_management
-from .lib_omost.canvas import Canvas as OmostCanvas
+from .lib_omost.canvas import (
+    Canvas as OmostCanvas,
+    OmostCanvasOutput,
+    OmostCanvasCondition,
+)
+from .lib_omost.utils import numpy2pytorch
 
 
 # Type definitions.
@@ -137,6 +142,32 @@ class OmostLLMChatNode:
         return (final_conversation, OmostCanvas.from_bot_response(generated_text))
 
 
+class OmostCanvasRenderNode:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "canvas": ("OMOST_CANVAS",),
+            }
+        }
+
+    RETURN_TYPES = (
+        "IMAGE",
+        "OMOST_CANVAS_CONDITIONING",
+    )
+    FUNCTION = "render_canvas"
+
+    def render_canvas(
+        self, canvas: OmostCanvas
+    ) -> Tuple[torch.Tensor, list[OmostCanvasCondition]]:
+        """Render canvas"""
+        canvas_output: OmostCanvasOutput = canvas.process()
+        return (
+            numpy2pytorch(canvas_output["initial_latent"]),
+            canvas_output["bag_of_conditions"],
+        )
+
+
 class OmostLayoutCondNode:
     @classmethod
     def INPUT_TYPES(s):
@@ -144,7 +175,7 @@ class OmostLayoutCondNode:
             "required": {
                 "positive": ("CONDITIONING",),
                 "negative": ("CONDITIONING",),
-                "canvas": ("OMOST_CANVAS",),
+                "canvas_conds": ("OMOST_CANVAS_CONDITIONING",),
             }
         }
 
@@ -154,18 +185,20 @@ class OmostLayoutCondNode:
     )
     FUNCTION = "layout_cond"
 
-    def layout_cond(self, positive, negative, canvas: OmostCanvas):
+    def layout_cond(self, positive, negative, canvas_conds: list[OmostCanvasCondition]):
         """Layout conditioning"""
 
 
 NODE_CLASS_MAPPINGS = {
     "OmostLLMLoaderNode": OmostLLMLoaderNode,
     "OmostLLMChatNode": OmostLLMChatNode,
+    "OmostCanvasRenderNode": OmostCanvasRenderNode,
     "OmostLayoutCondNode": OmostLayoutCondNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "OmostLLMLoaderNode": "Omost LLM Loader",
     "OmostLLMChatNode": "Omost LLM Chat",
+    "OmostCanvasRenderNode": "Omost Canvas Render",
     "OmostLayoutCondNode": "Omost Layout Cond",
 }
