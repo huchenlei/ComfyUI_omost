@@ -36,6 +36,9 @@ class OmostLLMLoaderNode:
                         "lllyasviel/omost-llama-3-8b-4bits",
                         "lllyasviel/omost-dolphin-2.9-llama3-8b-4bits",
                     ],
+                    {
+                        "default": "lllyasviel/omost-llama-3-8b-4bits",
+                    },
                 ),
             }
         }
