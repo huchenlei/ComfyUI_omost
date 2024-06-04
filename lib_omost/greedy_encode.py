@@ -37,7 +37,7 @@ class CLIPTokens(NamedTuple):
         )
 
     @staticmethod
-    def _get_77_tokens_in_torch(subprompt_inds: list[int]) -> torch.IntTensor:
+    def _get_77_tokens(subprompt_inds: list[int]) -> list[int]:
         # Note that all subprompt are theoretically less than 75 tokens (without bos/eos)
         result = (
             [SPECIAL_TOKENS["start"]]
@@ -45,15 +45,13 @@ class CLIPTokens(NamedTuple):
             + [SPECIAL_TOKENS["end"]]
             + [SPECIAL_TOKENS["pad"]] * 75
         )
-        result = result[:77]
-        result = torch.tensor([result]).to(dtype=torch.int64)
-        return result
+        return result[:77]
 
     def clamp_to_77_tokens(self) -> CLIPTokens:
         return CLIPTokens(
-            clip_l_tokens=self._get_77_tokens_in_torch(self.clip_l_tokens),
+            clip_l_tokens=self._get_77_tokens(self.clip_l_tokens),
             clip_g_tokens=(
-                self._get_77_tokens_in_torch(self.clip_g_tokens)
+                self._get_77_tokens(self.clip_g_tokens)
                 if self.clip_g_tokens
                 else None
             ),
