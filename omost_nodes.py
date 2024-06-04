@@ -22,6 +22,7 @@ from .lib_omost.greedy_encode import (
     encode_bag_of_subprompts_greedy,
     CLIPTokens,
     EncoderOutput,
+    SPECIAL_TOKENS,
 )
 
 
@@ -311,10 +312,13 @@ class OmostLayoutCondNode:
         """Encode bag of subprompts with greedy approach."""
 
         def convert_comfy_tokens(
-            tokens: list[ComfyCLIPTokensWithWeight],
+            comfy_tokens: list[ComfyCLIPTokensWithWeight],
         ) -> list[int]:
-            assert len(tokens) == 1
-            return [token for token, _ in tokens[0]]
+            assert len(comfy_tokens) == 1
+            tokens: list[int] = [token for token, _ in comfy_tokens[0]]
+            # Strip the first token which is the CLIP prefix.
+            # Strip padding tokens.
+            return tokens[1 : tokens.index(SPECIAL_TOKENS["end"])]
 
         def convert_to_comfy_tokens(tokens: CLIPTokens) -> ComfyCLIPTokens:
             return {
