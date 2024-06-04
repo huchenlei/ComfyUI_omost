@@ -289,6 +289,7 @@ class OmostLayoutCondNode:
         """Simplified way to encode subprompts by joining them together. This is
         more direct without re-organizing the prompts into optimal batches like
         with the greedy approach.
+        Note: This function has the issue of semantic truncation.
         """
         complete_prompt = ",".join(
             ["".join(prefixes + [target]) for target in suffixes]
