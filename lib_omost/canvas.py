@@ -133,11 +133,7 @@ class OmostCanvasCondition(TypedDict):
     prefixes: list[str]
     suffixes: list[str]
     rect: tuple[int, int, int, int]
-
-
-class OmostCanvasOutput(TypedDict):
-    initial_latent: np.ndarray
-    bag_of_conditions: list[OmostCanvasCondition]
+    color: tuple[int, int, int]
 
 
 class Canvas:
@@ -169,7 +165,7 @@ class Canvas:
         assert isinstance(tags, str), 'Global tags is not valid!'
 
         HTML_web_color_name = closest_name(HTML_web_color_name, valid_colors)
-        self.color = np.array([[valid_colors[HTML_web_color_name]]], dtype=np.uint8)
+        self.color = valid_colors[HTML_web_color_name]
 
         self.prefixes = [description]
         self.suffixes = detailed_descriptions
@@ -205,7 +201,7 @@ class Canvas:
         w, h = valid_areas[area]
         rect = (yb + yo - h // 2, yb + yo + h // 2, xb + xo - w // 2, xb + xo + w // 2)
         rect = [max(0, min(90, i)) for i in rect]
-        color = np.array([[valid_colors[HTML_web_color_name]]], dtype=np.uint8)
+        color = valid_colors[HTML_web_color_name]
 
         prefixes = self.prefixes + [description]
         suffixes = detailed_descriptions
@@ -226,33 +222,38 @@ class Canvas:
 
         return
 
-    def process(self) -> OmostCanvasOutput:
-        # sort components
-        self.components = sorted(self.components, key=lambda x: x['distance_to_viewer'], reverse=True)
+    @staticmethod
+    def render_initial_latent(conds: list[OmostCanvasCondition]) -> np.ndarray:
+        def np_color(rgb: tuple[int, int, int]) -> np.ndarray:
+            return np.array([[rgb]], dtype=np.uint8)
 
-        # compute initial latent
-        initial_latent = np.zeros(shape=(90, 90, 3), dtype=np.float32) + self.color
+        initial_latent = np.zeros(shape=(90, 90, 3), dtype=np.float32) + np_color(conds[0]['color'])
 
-        for component in self.components:
-            a, b, c, d = component['rect']
-            initial_latent[a:b, c:d] = 0.7 * component['color'] + 0.3 * initial_latent[a:b, c:d]
+        for cond in conds[1:]:
+            a, b, c, d = cond['rect']
+            initial_latent[a:b, c:d] = (
+                0.7 * np_color(cond['color']) + 0.3 * initial_latent[a:b, c:d]
+            )
 
         initial_latent = initial_latent.clip(0, 255).astype(np.uint8)
 
-        # compute conditions
+        return initial_latent
 
+    def process(self) -> list[OmostCanvasCondition]:
+        # sort components
+        self.components = sorted(self.components, key=lambda x: x['distance_to_viewer'], reverse=True)
+
+        # compute conditions
         bag_of_conditions = [
-            dict(rect=(0, 90, 0, 90), prefixes=self.prefixes, suffixes=self.suffixes)
+            dict(rect=(0, 90, 0, 90), prefixes=self.prefixes, suffixes=self.suffixes, color=self.color)
         ]
 
         for component in self.components:
             bag_of_conditions.append(dict(
+                color=component['color'],
                 rect=component['rect'],
                 prefixes=component['prefixes'],
                 suffixes=component['suffixes']
             ))
 
-        return dict(
-            initial_latent=initial_latent,
-            bag_of_conditions=bag_of_conditions,
-        )
+        return bag_of_conditions

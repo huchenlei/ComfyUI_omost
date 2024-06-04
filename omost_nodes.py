@@ -13,7 +13,6 @@ from comfy.sd import CLIP
 from nodes import CLIPTextEncode, ConditioningSetAreaPercentage
 from .lib_omost.canvas import (
     Canvas as OmostCanvas,
-    OmostCanvasOutput,
     OmostCanvasCondition,
     system_prompt,
 )
@@ -127,7 +126,6 @@ class OmostLLMChatNode:
 
     RETURN_TYPES = (
         "OMOST_CONVERSATION",
-        "IMAGE",
         "OMOST_CANVAS_CONDITIONING",
     )
     FUNCTION = "run_llm"
@@ -185,13 +183,29 @@ class OmostLLMChatNode:
             user_conversation_item,
             {"role": "assistant", "content": generated_text},
         ]
-        canvas = OmostCanvas.from_bot_response(generated_text)
-        canvas_output: OmostCanvasOutput = canvas.process()
         return (
             output_conversation,
-            numpy2pytorch(imgs=[canvas_output["initial_latent"]]),
-            canvas_output["bag_of_conditions"],
+            OmostCanvas.from_bot_response(generated_text).process(),
         )
+
+
+class OmostRenderCanvasConditioningNode:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "canvas_conds": ("OMOST_CANVAS_CONDITIONING",),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "render_canvas"
+
+    def render_canvas(
+        self, canvas_conds: list[OmostCanvasCondition]
+    ) -> Tuple[torch.Tensor]:
+        """Render canvas conditioning to image"""
+        return (numpy2pytorch(imgs=[OmostCanvas.render_initial_latent(canvas_conds)]),)
 
 
 class OmostLayoutCondNode:
@@ -295,6 +309,7 @@ NODE_CLASS_MAPPINGS = {
     "OmostLLMChatNode": OmostLLMChatNode,
     "OmostLayoutCondNode": OmostLayoutCondNode,
     "OmostLoadCanvasConditioningNode": OmostLoadCanvasConditioningNode,
+    "OmostRenderCanvasConditioningNode": OmostRenderCanvasConditioningNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -302,4 +317,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "OmostLLMChatNode": "Omost LLM Chat",
     "OmostLayoutCondNode": "Omost Layout Cond",
     "OmostLoadCanvasConditioningNode": "Omost Load Canvas Conditioning",
+    "OmostRenderCanvasConditioningNode": "Omost Render Canvas Conditioning",
 }
