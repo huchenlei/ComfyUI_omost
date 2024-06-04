@@ -182,7 +182,9 @@ LLM Chat allows user interact with LLM to obtain a JSON-like structure. You can 
 ]
 ```
 
-Region condition part converts the JSON condition to ComfyUI's area format. Under the hood, it is calling `ConditioningSetMask` node to set non-overlap area for each cond. The current region condition differs with original omost repo a lot, so expect a large difference there.
+Region condition part converts the JSON condition to ComfyUI's area format. Under the hood, it is calling `ConditioningSetMask` node to set non-overlap area for each cond.
+According to https://github.com/lllyasviel/Omost#regional-prompter, original Omost repo is using method 3, while ComfyUI's built-in method is method 2. So expect there to be some
+difference on results. I will implement ComfyUI version of [densediffusion](https://github.com/naver-ai/DenseDiffusion) soon.
 
 There are 2 overlap methods:
 - Overlay: The layer on top completely overwrites layer below
@@ -194,6 +196,6 @@ Optionally you can also pass the image generated from Omost canvas as initial la
 
 
 ## TODOs
-- Implement Omost's region area cond
+- Implement Omost's region area cond ([DenseDiffusion](https://github.com/naver-ai/DenseDiffusion))
 - Add a progress bar to the Chat node
 - A region condition editor for easier manipulation post generation
