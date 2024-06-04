@@ -218,7 +218,7 @@ class OmostLayoutCondNode:
         self, clip: CLIP, prefixes: list[str], suffixes: list[str]
     ) -> ComfyUIConditioning:
         """Simplified way to encode bag of subprompts without omost's greedy approach."""
-        final_cond = []
+        conds: ComfyUIConditioning = []
 
         logger.debug("Start encoding bag of subprompts")
         for target in suffixes:
@@ -227,11 +227,20 @@ class OmostLayoutCondNode:
             cond: ComfyUIConditioning = self.clip_text_encode_node.encode(
                 clip, complete_prompt
             )[0]
-            final_cond.extend(cond)
-        logger.debug(
-            "End encoding bag of subprompts. Total conditions: %d", len(final_cond)
-        )
-        return final_cond
+            assert len(cond) == 1
+            conds.extend(cond)
+
+        logger.debug("End encoding bag of subprompts. Total conditions: %d", len(conds))
+
+        # Concat all conditions
+        return [
+            [
+                # cond
+                torch.cat([cond for cond, _ in conds], dim=1),
+                # extra_dict
+                {"pooled_output": conds[0][1]["pooled_output"]},
+            ]
+        ]
 
     def layout_cond(
         self,
@@ -258,7 +267,7 @@ class OmostLayoutCondNode:
                 height=(d - c) / CANVAS_SIZE,
                 strength=1.0,
             )[0]
-
+            assert len(cond) == 1
             positive.extend(cond)
 
         return (positive,)
