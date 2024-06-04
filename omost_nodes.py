@@ -324,6 +324,7 @@ class OmostLayoutCondNode:
                 canvas_state[a:b, c:d] += 1.0
 
             for canvas_cond in region_conds:
+                a, b, c, d = canvas_cond["rect"]
                 mask = torch.zeros([CANVAS_SIZE, CANVAS_SIZE], dtype=torch.float32)
                 mask[a:b, c:d] = 1.0
                 mask = mask / canvas_state
