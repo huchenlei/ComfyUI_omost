@@ -261,10 +261,10 @@ class OmostLayoutCondNode:
             a, b, c, d = canvas_cond["rect"]
             cond: ComfyUIConditioning = self.cond_set_area_node.append(
                 cond,
-                x=a / CANVAS_SIZE,
-                y=c / CANVAS_SIZE,
-                width=(b - a) / CANVAS_SIZE,
-                height=(d - c) / CANVAS_SIZE,
+                x=c / CANVAS_SIZE,
+                y=a / CANVAS_SIZE,
+                width=(d - c) / CANVAS_SIZE,
+                height=(b - a) / CANVAS_SIZE,
                 strength=1.0,
             )[0]
             assert len(cond) == 1
