@@ -194,7 +194,6 @@ Optionally you can also pass the image generated from Omost canvas as initial la
 
 
 ## TODOs
-- Implement Greedy pack of subprompts
 - Implement Omost's region area cond
 - Add a progress bar to the Chat node
 - A region condition editor for easier manipulation post generation
