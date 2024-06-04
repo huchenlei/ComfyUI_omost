@@ -266,6 +266,19 @@ class OmostLayoutCondNode:
             ]
         ]
 
+    def encode_subprompts(
+        self, clip: CLIP, prefixes: list[str], suffixes: list[str]
+    ) -> ComfyUIConditioning:
+        """Simplified way to encode subprompts by joining them together. This is
+        more direct without re-organizing the prompts into optimal batches like
+        with the greedy approach.
+        """
+        complete_prompt = ",".join(
+            ["".join(prefixes + [target]) for target in suffixes]
+        )
+        logger.debug("Encoding prompt: %s", complete_prompt)
+        return self.clip_text_encode_node.encode(clip, complete_prompt)[0]
+
     @staticmethod
     def calc_cond_mask(
         canvas_conds: list[OmostCanvasCondition],
@@ -312,7 +325,7 @@ class OmostLayoutCondNode:
             if not is_global:
                 prefixes = prefixes[1:]
 
-            cond: ComfyUIConditioning = self.encode_bag_of_subprompts(
+            cond: ComfyUIConditioning = self.encode_subprompts(
                 clip, prefixes, canvas_cond["suffixes"]
             )
             # Set area cond
