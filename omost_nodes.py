@@ -1,4 +1,5 @@
 from __future__ import annotations
+from enum import Enum
 import json
 from typing import Literal, Tuple, TypedDict, NamedTuple
 import sys
@@ -225,6 +226,10 @@ class OmostLayoutCondNode:
                     "FLOAT",
                     {"min": 0.0, "max": 1.0, "step": 0.01, "default": 0.8},
                 ),
+                "overlap_method": (
+                    [e.value for e in OmostLayoutCondNode.AreaOverlapMethod],
+                    {"default": OmostLayoutCondNode.AreaOverlapMethod.AVERAGE.value},
+                ),
             },
             "optional": {
                 "positive": ("CONDITIONING",),
@@ -233,6 +238,14 @@ class OmostLayoutCondNode:
 
     RETURN_TYPES = ("CONDITIONING",)
     FUNCTION = "layout_cond"
+
+    class AreaOverlapMethod(Enum):
+        """Methods to handle overlapping areas."""
+
+        # The top layer overwrites the bottom layer.
+        OVERLAY = "overlay"
+        # Take the average of the two layers.
+        AVERAGE = "average"
 
     def __init__(self):
         self.cond_set_mask_node = ConditioningSetMask()
@@ -282,6 +295,7 @@ class OmostLayoutCondNode:
     @staticmethod
     def calc_cond_mask(
         canvas_conds: list[OmostCanvasCondition],
+        method: AreaOverlapMethod = AreaOverlapMethod.OVERLAY,
     ) -> list[OmostCanvasCondition]:
         """Calculate canvas cond mask."""
         CANVAS_SIZE = 90
@@ -292,15 +306,28 @@ class OmostLayoutCondNode:
         global_cond["mask"] = torch.ones(
             [CANVAS_SIZE, CANVAS_SIZE], dtype=torch.float32
         )
+        region_conds = canvas_conds[1:]
 
         canvas_state = torch.zeros([CANVAS_SIZE, CANVAS_SIZE], dtype=torch.float32)
-        for canvas_cond in canvas_conds[1:][::-1]:
-            a, b, c, d = canvas_cond["rect"]
-            mask = torch.zeros([CANVAS_SIZE, CANVAS_SIZE], dtype=torch.float32)
-            mask[a:b, c:d] = 1.0
-            mask = mask * (1 - canvas_state)
-            canvas_state += mask
-            canvas_cond["mask"] = mask
+        if method == OmostLayoutCondNode.AreaOverlapMethod.OVERLAY:
+            for canvas_cond in region_conds[::-1]:
+                a, b, c, d = canvas_cond["rect"]
+                mask = torch.zeros([CANVAS_SIZE, CANVAS_SIZE], dtype=torch.float32)
+                mask[a:b, c:d] = 1.0
+                mask = mask * (1 - canvas_state)
+                canvas_state += mask
+                canvas_cond["mask"] = mask
+        elif method == OmostLayoutCondNode.AreaOverlapMethod.AVERAGE:
+            canvas_state += 1e-6  # Avoid division by zero
+            for canvas_cond in region_conds:
+                a, b, c, d = canvas_cond["rect"]
+                canvas_state[a:b, c:d] += 1.0
+
+            for canvas_cond in region_conds:
+                mask = torch.zeros([CANVAS_SIZE, CANVAS_SIZE], dtype=torch.float32)
+                mask[a:b, c:d] = 1.0
+                mask = mask / canvas_state
+                canvas_cond["mask"] = mask
 
         return canvas_conds
 
@@ -310,12 +337,16 @@ class OmostLayoutCondNode:
         clip: CLIP,
         global_strength: float,
         region_strength: float,
+        overlap_method: str,
         positive: ComfyUIConditioning | None = None,
     ):
         """Layout conditioning"""
+        overlap_method = OmostLayoutCondNode.AreaOverlapMethod(overlap_method)
         positive: ComfyUIConditioning = positive or []
         positive = positive.copy()
-        canvas_conds = OmostLayoutCondNode.calc_cond_mask(canvas_conds)
+        canvas_conds = OmostLayoutCondNode.calc_cond_mask(
+            canvas_conds, method=overlap_method
+        )
 
         for i, canvas_cond in enumerate(canvas_conds):
             is_global = i == 0
