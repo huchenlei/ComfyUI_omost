@@ -1,11 +1,22 @@
+from __future__ import annotations
+import logging
 import torch
-import copy
-from typing import Callable, NamedTuple
+from typing import Callable, NamedTuple, TypedDict
+
+
+class SpecialTokens(TypedDict):
+    start: int
+    end: int
+    pad: int
 
 
 class CLIPTokens(NamedTuple):
     clip_l_tokens: list[int]
     clip_g_tokens: list[int] | None = None
+
+    @classmethod
+    def empty_tokens(cls) -> CLIPTokens:
+        return CLIPTokens(clip_l_tokens=[], clip_g_tokens=[])
 
     @property
     def length(self) -> int:
@@ -13,6 +24,40 @@ class CLIPTokens(NamedTuple):
 
     def __repr__(self) -> str:
         return f"CLIPTokens(clip_l_tokens({len(self.clip_l_tokens)}), clip_g_tokens={len(self.clip_g_tokens) if self.clip_g_tokens else None})"
+
+    def __add__(self, other: CLIPTokens) -> CLIPTokens:
+        if self.clip_g_tokens is None or other.clip_g_tokens is None:
+            clip_g_tokens = None
+        else:
+            clip_g_tokens = self.clip_g_tokens + other.clip_g_tokens
+
+        return CLIPTokens(
+            clip_l_tokens=self.clip_l_tokens + other.clip_l_tokens,
+            clip_g_tokens=clip_g_tokens,
+        )
+
+    @staticmethod
+    def _get_77_tokens_in_torch(subprompt_inds: list[int]) -> torch.IntTensor:
+        # Note that all subprompt are theoretically less than 75 tokens (without bos/eos)
+        result = (
+            [SPECIAL_TOKENS["start"]]
+            + subprompt_inds[:75]
+            + [SPECIAL_TOKENS["end"]]
+            + [SPECIAL_TOKENS["pad"]] * 75
+        )
+        result = result[:77]
+        result = torch.tensor([result]).to(dtype=torch.int64)
+        return result
+
+    def clamp_to_77_tokens(self) -> CLIPTokens:
+        return CLIPTokens(
+            clip_l_tokens=self._get_77_tokens_in_torch(self.clip_l_tokens),
+            clip_g_tokens=(
+                self._get_77_tokens_in_torch(self.clip_g_tokens)
+                if self.clip_g_tokens
+                else None
+            ),
+        )
 
 
 class EncoderOutput(NamedTuple):
@@ -22,6 +67,10 @@ class EncoderOutput(NamedTuple):
 
 TokenizeFunc = Callable[[str], CLIPTokens]
 EncodeFunc = Callable[[CLIPTokens], EncoderOutput]
+
+
+# ComfyUI protocol. See sd1_clip.py/sdxl_clip.py for the actual implementation.
+SPECIAL_TOKENS: SpecialTokens = {"start": 49406, "end": 49407, "pad": 49407}
 
 
 def greedy_partition(items: list[CLIPTokens], max_sum: int) -> list[list[CLIPTokens]]:
@@ -46,105 +95,44 @@ def greedy_partition(items: list[CLIPTokens], max_sum: int) -> list[list[CLIPTok
     return bags
 
 
-def get_77_tokens_in_torch(subprompt_inds, tokenizer):
-    # Note that all subprompt are theoretically less than 75 tokens (without bos/eos)
-    result = (
-        [tokenizer.bos_token_id]
-        + subprompt_inds[:75]
-        + [tokenizer.eos_token_id]
-        + [tokenizer.pad_token_id] * 75
-    )
-    result = result[:77]
-    result = torch.tensor([result]).to(device=device, dtype=torch.int64)
-    return result
+def encode_bag_of_subprompts_greedy(
+    prefixes: list[str],
+    suffixes: list[str],
+    tokenize_func: TokenizeFunc,
+    encode_func: EncodeFunc,
+    logger: logging.Logger | None = None,
+) -> EncoderOutput:
+    """
+    Note: tokenize_func is expected to clamp the tokens to 75 tokens.
+    """
+    if logger is None:
+        logger = logging.getLogger(__name__)
 
-
-def merge_with_prefix(bag):
-    merged_ids_t1 = copy.deepcopy(prefix_ids_t1)
-    merged_ids_t2 = copy.deepcopy(prefix_ids_t2)
-
-    for item in bag:
-        merged_ids_t1.extend(item["ids_t1"])
-        merged_ids_t2.extend(item["ids_t2"])
-
-    return dict(
-        ids_t1=get_77_tokens_in_torch(merged_ids_t1, self.tokenizer),
-        ids_t2=get_77_tokens_in_torch(merged_ids_t2, self.tokenizer_2),
-    )
-
-
-def double_encode(pair_of_inds):
-    inds = [pair_of_inds["ids_t1"], pair_of_inds["ids_t2"]]
-    text_encoders = [self.text_encoder, self.text_encoder_2]
-
-    pooled_prompt_embeds = None
-    prompt_embeds_list = []
-
-    for text_input_ids, text_encoder in zip(inds, text_encoders):
-        prompt_embeds = text_encoder(text_input_ids, output_hidden_states=True)
-
-        # Only last pooler_output is needed
-        pooled_prompt_embeds = prompt_embeds.pooler_output
-
-        # "2" because SDXL always indexes from the penultimate layer.
-        prompt_embeds = prompt_embeds.hidden_states[-2]
-        prompt_embeds_list.append(prompt_embeds)
-
-    prompt_embeds = torch.concat(prompt_embeds_list, dim=-1)
-    return prompt_embeds, pooled_prompt_embeds
-
-
-def encode_bag_of_subprompts_greedy(prefixes: list[str], suffixes: list[str]):
     # Begin with tokenizing prefixes
-
-    prefix_length = 0
-    prefix_ids_t1 = []
-    prefix_ids_t2 = []
-
-    for prefix in prefixes:
-        ids_t1 = self.tokenizer(
-            prefix, truncation=False, add_special_tokens=False
-        ).input_ids
-        ids_t2 = self.tokenizer_2(
-            prefix, truncation=False, add_special_tokens=False
-        ).input_ids
-        assert len(ids_t1) == len(ids_t2)
-        prefix_length += len(ids_t1)
-        prefix_ids_t1 += ids_t1
-        prefix_ids_t2 += ids_t2
+    prefix_tokens: CLIPTokens = sum(
+        [tokenize_func(prefix) for prefix in prefixes], CLIPTokens.empty_tokens()
+    )
+    logger.debug(f"Prefix tokens: {prefix_tokens}")
 
     # Then tokenizing suffixes
-
-    allowed_suffix_length = 75 - prefix_length
-    suffix_targets = []
-
-    for subprompt in suffixes:
-        # Note that all subprompt are theoretically less than 75 tokens (without bos/eos)
-        # So we can safely just crop it to 75
-        ids_t1 = self.tokenizer(
-            subprompt, truncation=False, add_special_tokens=False
-        ).input_ids[:75]
-        ids_t2 = self.tokenizer_2(
-            subprompt, truncation=False, add_special_tokens=False
-        ).input_ids[:75]
-        assert len(ids_t1) == len(ids_t2)
-        suffix_targets.append(dict(length=len(ids_t1), ids_t1=ids_t1, ids_t2=ids_t2))
+    allowed_suffix_length = 75 - prefix_tokens.length
+    logger.debug(f"Allowed suffix length: {allowed_suffix_length}")
+    suffix_targets: list[CLIPTokens] = [
+        tokenize_func(subprompt) for subprompt in suffixes
+    ]
+    logger.debug(f"Suffix targets: {suffix_targets}")
 
     # Then merge prefix and suffix tokens
-
     suffix_targets = greedy_partition(suffix_targets, max_sum=allowed_suffix_length)
-    targets = [merge_with_prefix(b) for b in suffix_targets]
+    targets = [
+        sum([prefix_tokens, *b], CLIPTokens.empty_tokens()).clamp_to_77_tokens()
+        for b in suffix_targets
+    ]
 
     # Encode!
+    encoded_embeds = [encode_func(target) for target in targets]
+    conds_merged = torch.concat([embed.cond for embed in encoded_embeds], dim=1)
+    poolers_merged = encoded_embeds[0].pooler
+    logger.debug(f"merged conds: {conds_merged.shape}, pooler: {poolers_merged.shape}")
 
-    conds, poolers = [], []
-
-    for target in targets:
-        cond, pooler = double_encode(target)
-        conds.append(cond)
-        poolers.append(pooler)
-
-    conds_merged = torch.concat(conds, dim=1)
-    poolers_merged = poolers[0]
-
-    return dict(cond=conds_merged, pooler=poolers_merged)
+    return EncoderOutput(cond=conds_merged, pooler=poolers_merged)

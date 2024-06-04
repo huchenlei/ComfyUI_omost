@@ -18,6 +18,11 @@ from .lib_omost.canvas import (
     system_prompt,
 )
 from .lib_omost.utils import numpy2pytorch
+from .lib_omost.greedy_encode import (
+    encode_bag_of_subprompts_greedy,
+    CLIPTokens,
+    EncoderOutput,
+)
 
 
 def create_logger(level=logging.INFO):
@@ -50,12 +55,12 @@ class OmostLLM(NamedTuple):
 
 
 ComfyUIConditioning = list  # Dummy type definitions for ComfyUI
-CLIPTokensWithWeight = list[Tuple[int, float]]
+ComfyCLIPTokensWithWeight = list[Tuple[int, float]]
 
 
-class CLIPTokens(TypedDict):
-    l: list[CLIPTokensWithWeight]
-    g: NotRequired[list[CLIPTokensWithWeight]]
+class ComfyCLIPTokens(TypedDict):
+    l: list[ComfyCLIPTokensWithWeight]
+    g: NotRequired[list[ComfyCLIPTokensWithWeight]]
 
 
 # End of type definitions.
@@ -258,7 +263,9 @@ class OmostLayoutCondNode:
     def encode_bag_of_subprompts(
         self, clip: CLIP, prefixes: list[str], suffixes: list[str]
     ) -> ComfyUIConditioning:
-        """Simplified way to encode bag of subprompts without omost's greedy approach."""
+        """@Deprecated
+        Simplified way to encode bag of subprompts without omost's greedy approach.
+        """
         conds: ComfyUIConditioning = []
 
         logger.debug("Start encoding bag of subprompts")
@@ -286,7 +293,8 @@ class OmostLayoutCondNode:
     def encode_subprompts(
         self, clip: CLIP, prefixes: list[str], suffixes: list[str]
     ) -> ComfyUIConditioning:
-        """Simplified way to encode subprompts by joining them together. This is
+        """@Deprecated
+        Simplified way to encode subprompts by joining them together. This is
         more direct without re-organizing the prompts into optimal batches like
         with the greedy approach.
         Note: This function has the issue of semantic truncation.
@@ -296,6 +304,57 @@ class OmostLayoutCondNode:
         )
         logger.debug("Encoding prompt: %s", complete_prompt)
         return self.clip_text_encode_node.encode(clip, complete_prompt)[0]
+
+    def encode_bag_of_subprompts_greedy(
+        self, clip: CLIP, prefixes: list[str], suffixes: list[str]
+    ) -> ComfyUIConditioning:
+        """Encode bag of subprompts with greedy approach."""
+
+        def convert_comfy_tokens(
+            tokens: list[ComfyCLIPTokensWithWeight],
+        ) -> list[int]:
+            assert len(tokens) == 1
+            return [token for token, _ in tokens[0]]
+
+        def convert_to_comfy_tokens(tokens: CLIPTokens) -> ComfyCLIPTokens:
+            return {
+                "l": [[(token, 1.0) for token in tokens.clip_l_tokens]],
+                "g": (
+                    [[(token, 1.0) for token in tokens.clip_g_tokens]]
+                    if tokens.clip_g_tokens is not None
+                    else None
+                ),
+            }
+
+        def tokenize(text: str) -> CLIPTokens:
+            tokens: ComfyCLIPTokens = clip.tokenize(text)
+            return CLIPTokens(
+                clip_l_tokens=convert_comfy_tokens(tokens["l"]),
+                clip_g_tokens=(
+                    convert_comfy_tokens(tokens.get("g")) if "g" in tokens else None
+                ),
+            )
+
+        def encode(tokens: CLIPTokens) -> EncoderOutput:
+            cond, pooled = clip.encode_from_tokens(
+                convert_to_comfy_tokens(tokens), return_pooled=True
+            )
+            return EncoderOutput(cond=cond, pooler=pooled)
+
+        encoder_output = encode_bag_of_subprompts_greedy(
+            prefixes,
+            suffixes,
+            tokenize_func=tokenize,
+            encode_func=encode,
+            logger=logger,
+        )
+
+        return [
+            [
+                encoder_output.cond,
+                {"pooled_output": encoder_output.pooler},
+            ]
+        ]
 
     @staticmethod
     def calc_cond_mask(
@@ -363,7 +422,7 @@ class OmostLayoutCondNode:
             if not is_global:
                 prefixes = prefixes[1:]
 
-            cond: ComfyUIConditioning = self.encode_subprompts(
+            cond: ComfyUIConditioning = self.encode_bag_of_subprompts_greedy(
                 clip, prefixes, canvas_cond["suffixes"]
             )
             # Set area cond
