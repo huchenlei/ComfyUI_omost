@@ -38,7 +38,7 @@ def create_logger(level=logging.INFO):
     return logger
 
 
-logger = create_logger(level=logging.DEBUG)
+logger = create_logger(level=logging.INFO)
 
 
 # Type definitions.
