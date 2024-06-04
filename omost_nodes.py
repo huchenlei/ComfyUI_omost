@@ -10,7 +10,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 import comfy.model_management
 from comfy.sd import CLIP
-from nodes import CLIPTextEncode, ConditioningSetAreaPercentage
+from nodes import CLIPTextEncode, ConditioningSetMask
 from .lib_omost.canvas import (
     Canvas as OmostCanvas,
     OmostCanvasCondition,
@@ -209,12 +209,22 @@ class OmostRenderCanvasConditioningNode:
 
 
 class OmostLayoutCondNode:
+    """Apply Omost layout with ComfyUI's area condition system."""
+
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
                 "canvas_conds": ("OMOST_CANVAS_CONDITIONING",),
                 "clip": ("CLIP",),
+                "global_strength": (
+                    "FLOAT",
+                    {"min": 0.0, "max": 1.0, "step": 0.01, "default": 0.2},
+                ),
+                "region_strength": (
+                    "FLOAT",
+                    {"min": 0.0, "max": 1.0, "step": 0.01, "default": 0.8},
+                ),
             },
             "optional": {
                 "positive": ("CONDITIONING",),
@@ -225,7 +235,7 @@ class OmostLayoutCondNode:
     FUNCTION = "layout_cond"
 
     def __init__(self):
-        self.cond_set_area_node = ConditioningSetAreaPercentage()
+        self.cond_set_mask_node = ConditioningSetMask()
         self.clip_text_encode_node = CLIPTextEncode()
 
     def encode_bag_of_subprompts(
@@ -256,30 +266,61 @@ class OmostLayoutCondNode:
             ]
         ]
 
+    @staticmethod
+    def calc_cond_mask(
+        canvas_conds: list[OmostCanvasCondition],
+    ) -> list[OmostCanvasCondition]:
+        """Calculate canvas cond mask."""
+        CANVAS_SIZE = 90
+        assert len(canvas_conds) > 0
+        canvas_conds = canvas_conds.copy()
+
+        global_cond = canvas_conds[0]
+        global_cond["mask"] = torch.ones(
+            [CANVAS_SIZE, CANVAS_SIZE], dtype=torch.float32
+        )
+
+        canvas_state = torch.zeros([CANVAS_SIZE, CANVAS_SIZE], dtype=torch.float32)
+        for canvas_cond in canvas_conds[1:][::-1]:
+            a, b, c, d = canvas_cond["rect"]
+            mask = torch.zeros([CANVAS_SIZE, CANVAS_SIZE], dtype=torch.float32)
+            mask[a:b, c:d] = 1.0
+            mask = mask * (1 - canvas_state)
+            canvas_state += mask
+            canvas_cond["mask"] = mask
+
+        return canvas_conds
+
     def layout_cond(
         self,
         canvas_conds: list[OmostCanvasCondition],
         clip: CLIP,
+        global_strength: float,
+        region_strength: float,
         positive: ComfyUIConditioning | None = None,
     ):
         """Layout conditioning"""
-        CANVAS_SIZE = 90
         positive: ComfyUIConditioning = positive or []
         positive = positive.copy()
+        canvas_conds = OmostLayoutCondNode.calc_cond_mask(canvas_conds)
 
-        for canvas_cond in canvas_conds:
+        for i, canvas_cond in enumerate(canvas_conds):
+            is_global = i == 0
+
+            prefixes = canvas_cond["prefixes"]
+            # Skip the global prefix for region prompts.
+            if not is_global:
+                prefixes = prefixes[1:]
+
             cond: ComfyUIConditioning = self.encode_bag_of_subprompts(
-                clip, canvas_cond["prefixes"], canvas_cond["suffixes"]
+                clip, prefixes, canvas_cond["suffixes"]
             )
             # Set area cond
-            a, b, c, d = canvas_cond["rect"]
-            cond: ComfyUIConditioning = self.cond_set_area_node.append(
+            cond: ComfyUIConditioning = self.cond_set_mask_node.append(
                 cond,
-                x=c / CANVAS_SIZE,
-                y=a / CANVAS_SIZE,
-                width=(d - c) / CANVAS_SIZE,
-                height=(b - a) / CANVAS_SIZE,
-                strength=1.0,
+                mask=canvas_cond["mask"],
+                set_cond_area="default",
+                strength=global_strength if is_global else region_strength,
             )[0]
             assert len(cond) == 1
             positive.extend(cond)
@@ -315,7 +356,7 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "OmostLLMLoaderNode": "Omost LLM Loader",
     "OmostLLMChatNode": "Omost LLM Chat",
-    "OmostLayoutCondNode": "Omost Layout Cond",
+    "OmostLayoutCondNode": "Omost Layout Cond (ComfyUI-Area)",
     "OmostLoadCanvasConditioningNode": "Omost Load Canvas Conditioning",
     "OmostRenderCanvasConditioningNode": "Omost Render Canvas Conditioning",
 }
