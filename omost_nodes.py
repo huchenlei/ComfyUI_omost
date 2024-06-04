@@ -236,7 +236,7 @@ class OmostLayoutCondNode:
             },
         }
 
-    RETURN_TYPES = ("CONDITIONING",)
+    RETURN_TYPES = ("CONDITIONING", "MASK")
     FUNCTION = "layout_cond"
 
     class AreaOverlapMethod(Enum):
@@ -344,6 +344,7 @@ class OmostLayoutCondNode:
         overlap_method = OmostLayoutCondNode.AreaOverlapMethod(overlap_method)
         positive: ComfyUIConditioning = positive or []
         positive = positive.copy()
+        masks: list[torch.Tensor] = []
         canvas_conds = OmostLayoutCondNode.calc_cond_mask(
             canvas_conds, method=overlap_method
         )
@@ -368,8 +369,15 @@ class OmostLayoutCondNode:
             )[0]
             assert len(cond) == 1
             positive.extend(cond)
+            masks.append(canvas_cond["mask"].unsqueeze(0))
 
-        return (positive,)
+        return (
+            positive,
+            # Output masks in case it's needed for debugging or the user might
+            # want to apply extra condition such as ControlNet/IPAdapter to
+            # specified region.
+            torch.cat(masks, dim=0),
+        )
 
 
 class OmostLoadCanvasConditioningNode:
