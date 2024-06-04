@@ -81,6 +81,7 @@ class OmostLLMLoaderNode:
 
     RETURN_TYPES = ("OMOST_LLM",)
     FUNCTION = "load_llm"
+    CATEGORY = "omost"
 
     def load_llm(self, llm_name: str) -> Tuple[OmostLLM]:
         """Load LLM model"""
@@ -130,6 +131,7 @@ class OmostLLMChatNode:
         "OMOST_CANVAS_CONDITIONING",
     )
     FUNCTION = "run_llm"
+    CATEGORY = "omost"
 
     def run_llm(
         self,
@@ -201,6 +203,7 @@ class OmostRenderCanvasConditioningNode:
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "render_canvas"
+    CATEGORY = "omost"
 
     def render_canvas(
         self, canvas_conds: list[OmostCanvasCondition]
@@ -238,6 +241,7 @@ class OmostLayoutCondNode:
 
     RETURN_TYPES = ("CONDITIONING", "MASK")
     FUNCTION = "layout_cond"
+    CATEGORY = "omost"
 
     class AreaOverlapMethod(Enum):
         """Methods to handle overlapping areas."""
@@ -392,6 +396,7 @@ class OmostLoadCanvasConditioningNode:
 
     RETURN_TYPES = ("OMOST_CANVAS_CONDITIONING",)
     FUNCTION = "load_canvas"
+    CATEGORY = "omost"
 
     def load_canvas(self, json_str: str) -> Tuple[list[OmostCanvasCondition]]:
         """Load canvas from file"""
