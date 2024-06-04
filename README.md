@@ -184,6 +184,15 @@ LLM Chat allows user interact with LLM to obtain a JSON-like structure. You can 
 
 Region condition part converts the JSON condition to ComfyUI's area format. Under the hood, it is calling `ConditioningSetMask` node to set non-overlap area for each cond. The current region condition differs with original omost repo a lot, so expect a large difference there.
 
+There are 2 overlap methods:
+- Overlay: The layer on top completely overwrites layer below
+- Average: The overlapped area is the average of all conditions
+![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/e7d007e4-1175-4435-adf4-a9211937d8c1)
+
+Optionally you can also pass the image generated from Omost canvas as initial latent as described in the original Omost repo:
+![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/f913d141-9045-41fa-998f-770a840adc69)
+
+
 ## TODOs
 - Implement Greedy pack of subprompts
 - Implement Omost's region area cond
