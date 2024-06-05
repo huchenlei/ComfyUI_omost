@@ -2,8 +2,6 @@
 
 ComfyUI implementation of [Omost](https://github.com/lllyasviel/Omost).
 
-![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/684994d9-be2a-43ba-bd90-fef2411fcab0)
-
 ## WIP
 The node structure in this repo are subject to change in recent development.
 
