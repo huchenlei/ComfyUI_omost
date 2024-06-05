@@ -21,8 +21,9 @@ Optionally you can use the show-anything node to display the json text and save 
 The LLM runs slow. Each chat takes about 3~5min on 4090.
 
 Examples:
-- Simple LLM Chat: ![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/dedcb524-483f-48c0-a0d6-6cc188a0f47b)
-- Multi-round LLM Chat: ![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/090cd1b9-d433-4a5f-b485-a49d4cabc461)
+- Simple LLM Chat: ![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/896eb810-6137-4682-8236-67cfefdbae99)
+- Multi-round LLM Chat: ![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/fada801a-0116-4b39-8334-b62664dbf153)
+
 
 Here is the a sample JSON output used in the examples:
 <details>
@@ -216,7 +217,6 @@ You can freely compose the region condition with other control methods like Cont
 ![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/191a5ea1-776a-42da-89ee-fd17a3a08eae)
 
 ## TODOs
-- Add seed to LLM Chat node
 - Implement Omost's region area cond ([DenseDiffusion](https://github.com/naver-ai/DenseDiffusion))
 - Add a progress bar to the Chat node
 - A region condition editor for easier manipulation post generation
