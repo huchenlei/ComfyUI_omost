@@ -17,7 +17,7 @@ from .lib_omost.canvas import (
     OmostCanvasCondition,
     system_prompt,
 )
-from .lib_omost.utils import numpy2pytorch
+from .lib_omost.utils import numpy2pytorch, scoped_numpy_random, scoped_torch_random
 from .lib_omost.greedy_encode import (
     encode_bag_of_subprompts_greedy,
     CLIPTokens,
@@ -126,6 +126,8 @@ class OmostLLMChatNode:
                     "FLOAT",
                     {"min": 0.0, "max": 2.0, "step": 0.01, "default": 0.6},
                 ),
+                # Note: ComfyUI's front-end code randomizes the seed to 64-bit int.
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
             },
             "optional": {
                 "conversation": ("OMOST_CONVERSATION",),
@@ -136,8 +138,27 @@ class OmostLLMChatNode:
         "OMOST_CONVERSATION",
         "OMOST_CANVAS_CONDITIONING",
     )
-    FUNCTION = "run_llm"
+    FUNCTION = "run_llm_with_seed"
     CATEGORY = "omost"
+
+    def run_llm_with_seed(
+        self,
+        llm: OmostLLM,
+        text: str,
+        max_new_tokens: int,
+        top_p: float,
+        temperature: float,
+        seed: int,
+        conversation: OmostConversation | None = None,
+    ) -> Tuple[OmostConversation, OmostCanvas]:
+        if seed > 0xFFFFFFFF:
+            seed = seed & 0xFFFFFFFF
+            logger.warning("Seed is too large. Truncating to 32-bit: %d", seed)
+
+        with scoped_torch_random(seed), scoped_numpy_random(seed):
+            return self.run_llm(
+                llm, text, max_new_tokens, top_p, temperature, conversation
+            )
 
     def run_llm(
         self,
