@@ -1,0 +1,272 @@
+{
+  "last_node_id": 26,
+  "last_link_id": 30,
+  "nodes": [
+    {
+      "id": 10,
+      "type": "OmostLLMLoaderNode",
+      "pos": [
+        71,
+        107
+      ],
+      "size": {
+        "0": 315,
+        "1": 58
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "OMOST_LLM",
+          "type": "OMOST_LLM",
+          "links": [
+            26,
+            28
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "OmostLLMLoaderNode"
+      },
+      "widgets_values": [
+        "lllyasviel/omost-llama-3-8b-4bits"
+      ]
+    },
+    {
+      "id": 25,
+      "type": "OmostLLMChatNode",
+      "pos": [
+        490,
+        110
+      ],
+      "size": {
+        "0": 400,
+        "1": 216
+      },
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "llm",
+          "type": "OMOST_LLM",
+          "link": 26
+        },
+        {
+          "name": "conversation",
+          "type": "OMOST_CONVERSATION",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "OMOST_CONVERSATION",
+          "type": "OMOST_CONVERSATION",
+          "links": [
+            27
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "OMOST_CANVAS_CONDITIONING",
+          "type": "OMOST_CANVAS_CONDITIONING",
+          "links": [
+            29
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "OmostLLMChatNode"
+      },
+      "widgets_values": [
+        "generate an image of the fierce battle of warriors and a dragon",
+        4096,
+        0.9,
+        0.6,
+        492549861980888,
+        "fixed"
+      ]
+    },
+    {
+      "id": 23,
+      "type": "easy showAnything",
+      "pos": [
+        982,
+        112
+      ],
+      "size": {
+        "0": 385.9798278808594,
+        "1": 208.11888122558594
+      },
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "anything",
+          "type": "*",
+          "link": 29,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "easy showAnything"
+      },
+      "widgets_values": [
+        "[{\"rect\": [0, 90, 0, 90], \"prefixes\": [\"A fierce battle between warriors and a dragon.\"], \"suffixes\": [\"In this image, we witness a dramatic and intense battle between brave warriors and a menacing dragon.\", \"The warriors, clad in medieval armor, are fighting valiantly with their swords and shields.\", \"They are positioned strategically around the battlefield, showcasing their bravery and skill.\", \"The dragon, a massive and fearsome creature with scales glinting in the sunlight, breathes fire that illuminates the darkening sky.\", \"Its wings are spread wide, creating a sense of chaos and destruction.\", \"The ground is littered with fallen warriors and debris, adding to the grim atmosphere of the scene.\", \"The sky is darkening, with clouds of smoke and ash swirling above.\", \"The overall mood is one of intense conflict and high stakes, as the warriors fight for their lives and the dragon seeks to dominate the land.\", \"battle, warriors, dragon, medieval armor, swords, shields, fire-breathing, chaos, destruction, fallen warriors, debris, darkening sky, clouds, smoke, ash, intense conflict, high stakes, bravery, skill, grim atmosphere.\"], \"color\": [47, 79, 79]}, {\"color\": [72, 61, 139], \"rect\": [0, 45, 0, 90], \"prefixes\": [\"A fierce battle between warriors and a dragon.\", \"The darkening sky.\"], \"suffixes\": [\"The sky above the battlefield is darkening, filled with clouds of smoke and ash swirling above.\", \"The sun is setting, casting a dramatic and intense light over the scene.\", \"The clouds are thick and ominous, adding to the grim and chaotic atmosphere of the battle.\", \"The darkening sky contrasts sharply with the fiery flames of the dragon, creating a dramatic and intense visual element.\", \"The overall mood of the sky is one of impending doom and high stakes, as if the fate of the warriors hangs in the balance.\", \"darkening sky, clouds, smoke, ash, swirling, sun setting, dramatic light, intense, thick clouds, ominous, grim atmosphere, chaotic, fiery flames, contrast, dramatic, visual element, impending doom, high stakes, fate, warriors.\", \"A sense of impending doom and high stakes fills the air.\", \"Dramatic and intense, with a focus on the contrast between the sky and the flames.\", \"High-quality rendering with dramatic lighting and intense visual elements.\"]}, {\"color\": [178, 34, 34], \"rect\": [10, 80, 10, 80], \"prefixes\": [\"A fierce battle between warriors and a dragon.\", \"The fierce dragon.\"], \"suffixes\": [\"The dragon is the focal point of this image, a massive creature with scales that glint in the sunlight.\", \"Its body is covered in intricate patterns of dark and light scales, giving it a fearsome appearance.\", \"The dragon's wings are spread wide, revealing their immense size and power.\", \"Its eyes are fierce and glowing, exuding a sense of malevolence and strength.\", \"As it breathes fire, the flames illuminate the darkening sky and add a dramatic and intense element to the scene.\", \"The ground around the dragon is scorched and charred, showing the devastating power of its fire.\", \"dragon, massive creature, scales, sunlight, wings, power, fierce eyes, glowing, malevolence, strength, fire-breathing, flames, darkening sky, dramatic, intense, scorched ground, charred.\", \"A sense of chaos and destruction fills the air.\", \"Dramatic and intense, with a focus on the dragon\\u2019s fearsome appearance.\", \"High-quality rendering with intricate details and dramatic lighting.\"]}, {\"color\": [105, 105, 105], \"rect\": [5, 85, 0, 40], \"prefixes\": [\"A fierce battle between warriors and a dragon.\", \"A group of brave warriors.\"], \"suffixes\": [\"A group of brave warriors is positioned on the left side of the image, clad in medieval armor.\", \"They are engaged in the battle, wielding swords and shields with great skill and bravery.\", \"The armor they wear is detailed and realistic, showcasing the craftsmanship of the era.\", \"Their faces are set in determined expressions, and their movements are fluid and coordinated, indicating their experience and training.\", \"Some warriors are fallen, lying on the ground with their weapons still clutched in their hands.\", \"The ground around them is littered with debris and fallen warriors, adding to the grim and intense atmosphere of the scene.\", \"warriors, brave, medieval armor, battle, swords, shields, skill, bravery, detailed armor, realistic, craftsmanship, determined expressions, fluid movements, experience, training, fallen warriors, debris, grim atmosphere.\", \"A sense of bravery and determination fills the air.\", \"Realistic and detailed, with a focus on the craftsmanship of the armor.\", \"High-quality rendering with detailed and realistic armor and expressions.\"]}, {\"color\": [105, 105, 105], \"rect\": [5, 85, 50, 90], \"prefixes\": [\"A fierce battle between warriors and a dragon.\", \"Another group of warriors.\"], \"suffixes\": [\"On the right side of the image, another group of warriors is engaged in the battle.\", \"They are also clad in medieval armor and are fighting valiantly with their weapons.\", \"The armor they wear is equally detailed and realistic, showcasing the same level of craftsmanship.\", \"Their movements are coordinated, and their expressions are determined, showing their bravery and skill.\", \"Some warriors are fallen, lying on the ground with their weapons still clutched in their hands.\", \"The ground around them is littered with debris and fallen warriors, adding to the grim and intense atmosphere of the scene.\", \"warriors, brave, medieval armor, battle, swords, shields, skill, bravery, detailed armor, realistic, craftsmanship, determined expressions, fluid movements, experience, training, fallen warriors, debris, grim atmosphere.\", \"A sense of bravery and determination fills the air.\", \"Realistic and detailed, with a focus on the craftsmanship of the armor.\", \"High-quality rendering with detailed and realistic armor and expressions.\"]}, {\"color\": [0, 0, 0], \"rect\": [45, 90, 0, 90], \"prefixes\": [\"A fierce battle between warriors and a dragon.\", \"The scorched and charred ground.\"], \"suffixes\": [\"The ground of the battlefield is scorched and charred, showing the devastating power of the dragon\\u2019s fire.\", \"Debris and fallen warriors litter the area, adding to the grim and intense atmosphere of the scene.\", \"The scorched earth is blackened and cracked, with patches of grass and vegetation still burning.\", \"The ground tells a story of destruction and chaos, as the remnants of the battle are scattered around.\", \"The overall mood of the ground is one of devastation and destruction, as if the land itself has been torn apart by the conflict.\", \"scorched ground, charred, dragon\\u2019s fire, debris, fallen warriors, grim atmosphere, intense, scorched earth, blackened, cracked, grass, vegetation, burning, destruction, chaos, battle remnants, devastation, conflict.\", \"A sense of devastation and destruction fills the air.\", \"Grim and intense, with a focus on the scorched and charred ground.\", \"High-quality rendering with detailed and realistic scorched earth and debris.\"]}]"
+      ]
+    },
+    {
+      "id": 19,
+      "type": "easy showAnything",
+      "pos": [
+        984,
+        395
+      ],
+      "size": {
+        "0": 403.86956787109375,
+        "1": 215.21694946289062
+      },
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "anything",
+          "type": "*",
+          "link": 30,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "easy showAnything"
+      },
+      "widgets_values": [
+        "[{\"rect\": [0, 90, 0, 90], \"prefixes\": [\"A fierce battle between warriors and a dinosaur.\"], \"suffixes\": [\"In this image, we witness a dramatic and intense battle between brave warriors and a menacing dinosaur.\", \"The warriors, clad in medieval armor, are fighting valiantly with their swords and shields.\", \"They are positioned strategically around the battlefield, showcasing their bravery and skill.\", \"The dinosaur, a massive and fearsome creature with scales glinting in the sunlight, charges forward with powerful movements.\", \"Its body is covered in intricate patterns of dark and light scales, giving it a fearsome appearance.\", \"The ground is littered with fallen warriors and debris, adding to the grim atmosphere of the scene.\", \"The sky is darkening, with clouds of smoke and ash swirling above.\", \"The overall mood is one of intense conflict and high stakes, as the warriors fight for their lives and the dinosaur seeks to dominate the land.\", \"battle, warriors, dinosaur, medieval armor, swords, shields, powerful movements, chaos, destruction, fallen warriors, debris, darkening sky, clouds, smoke, ash, intense conflict, high stakes, bravery, skill, grim atmosphere.\"], \"color\": [47, 79, 79]}, {\"color\": [72, 61, 139], \"rect\": [0, 45, 0, 90], \"prefixes\": [\"A fierce battle between warriors and a dinosaur.\", \"The darkening sky.\"], \"suffixes\": [\"The sky above the battlefield is darkening, filled with clouds of smoke and ash swirling above.\", \"The sun is setting, casting a dramatic and intense light over the scene.\", \"The clouds are thick and ominous, adding to the grim and chaotic atmosphere of the battle.\", \"The darkening sky contrasts sharply with the powerful movements of the dinosaur, creating a dramatic and intense visual element.\", \"The overall mood of the sky is one of impending doom and high stakes, as if the fate of the warriors hangs in the balance.\", \"darkening sky, clouds, smoke, ash, swirling, sun setting, dramatic light, intense, thick clouds, ominous, grim atmosphere, chaotic, powerful movements, contrast, dramatic, visual element, impending doom, high stakes, fate, warriors.\", \"A sense of impending doom and high stakes fills the air.\", \"Dramatic and intense, with a focus on the contrast between the sky and the powerful movements of the dinosaur.\", \"High-quality rendering with dramatic lighting and intense visual elements.\"]}, {\"color\": [178, 34, 34], \"rect\": [10, 80, 10, 80], \"prefixes\": [\"A fierce battle between warriors and a dinosaur.\", \"The fierce dinosaur.\"], \"suffixes\": [\"The dinosaur is the focal point of this image, a massive creature with scales that glint in the sunlight.\", \"Its body is covered in intricate patterns of dark and light scales, giving it a fearsome appearance.\", \"The dinosaur is charging forward with powerful movements, revealing its immense size and power.\", \"Its eyes are fierce and glowing, exuding a sense of malevolence and strength.\", \"As it moves, the ground around it is scorched and charred, showing the devastating power of its movements.\", \"dinosaur, massive creature, scales, sunlight, powerful movements, power, fierce eyes, glowing, malevolence, strength, charging, dramatic, intense, scorched ground, charred.\", \"A sense of chaos and destruction fills the air.\", \"Dramatic and intense, with a focus on the dinosaur\\u2019s fearsome appearance.\", \"High-quality rendering with intricate details and dramatic lighting.\"]}, {\"color\": [105, 105, 105], \"rect\": [5, 85, 0, 40], \"prefixes\": [\"A fierce battle between warriors and a dinosaur.\", \"A group of brave warriors.\"], \"suffixes\": [\"A group of brave warriors is positioned on the left side of the image, clad in medieval armor.\", \"They are engaged in the battle, wielding swords and shields with great skill and bravery.\", \"The armor they wear is detailed and realistic, showcasing the craftsmanship of the era.\", \"Their faces are set in determined expressions, and their movements are fluid and coordinated, indicating their experience and training.\", \"Some warriors are fallen, lying on the ground with their weapons still clutched in their hands.\", \"The ground around them is littered with debris and fallen warriors, adding to the grim and intense atmosphere of the scene.\", \"warriors, brave, medieval armor, battle, swords, shields, skill, bravery, detailed armor, realistic, craftsmanship, determined expressions, fluid movements, experience, training, fallen warriors, debris, grim atmosphere.\", \"A sense of bravery and determination fills the air.\", \"Realistic and detailed, with a focus on the craftsmanship of the armor.\", \"High-quality rendering with detailed and realistic armor and expressions.\"]}, {\"color\": [105, 105, 105], \"rect\": [5, 85, 50, 90], \"prefixes\": [\"A fierce battle between warriors and a dinosaur.\", \"Another group of warriors.\"], \"suffixes\": [\"On the right side of the image, another group of warriors is engaged in the battle.\", \"They are also clad in medieval armor and are fighting valiantly with their weapons.\", \"The armor they wear is equally detailed and realistic, showcasing the same level of craftsmanship.\", \"Their movements are coordinated, and their expressions are determined, showing their bravery and skill.\", \"Some warriors are fallen, lying on the ground with their weapons still clutched in their hands.\", \"The ground around them is littered with debris and fallen warriors, adding to the grim and intense atmosphere of the scene.\", \"warriors, brave, medieval armor, battle, swords, shields, skill, bravery, detailed armor, realistic, craftsmanship, determined expressions, fluid movements, experience, training, fallen warriors, debris, grim atmosphere.\", \"A sense of bravery and determination fills the air.\", \"Realistic and detailed, with a focus on the craftsmanship of the armor.\", \"High-quality rendering with detailed and realistic armor and expressions.\"]}, {\"color\": [0, 0, 0], \"rect\": [45, 90, 0, 90], \"prefixes\": [\"A fierce battle between warriors and a dinosaur.\", \"The scorched and charred ground.\"], \"suffixes\": [\"The ground of the battlefield is scorched and charred, showing the devastating power of the dinosaur\\u2019s movements.\", \"Debris and fallen warriors litter the area, adding to the grim and intense atmosphere of the scene.\", \"The scorched earth is blackened and cracked, with patches of grass and vegetation still burning.\", \"The ground tells a story of destruction and chaos, as the remnants of the battle are scattered around.\", \"The overall mood of the ground is one of devastation and destruction, as if the land itself has been torn apart by the conflict.\", \"scorched ground, charred, dinosaur\\u2019s movements, debris, fallen warriors, grim atmosphere, intense, scorched earth, blackened, cracked, grass, vegetation, burning, destruction, chaos, battle remnants, devastation, conflict.\", \"A sense of devastation and destruction fills the air.\", \"Grim and intense, with a focus on the scorched and charred ground.\", \"High-quality rendering with detailed and realistic scorched earth and debris.\"]}]"
+      ]
+    },
+    {
+      "id": 26,
+      "type": "OmostLLMChatNode",
+      "pos": [
+        489,
+        393
+      ],
+      "size": {
+        "0": 400,
+        "1": 216
+      },
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "llm",
+          "type": "OMOST_LLM",
+          "link": 28,
+          "slot_index": 0
+        },
+        {
+          "name": "conversation",
+          "type": "OMOST_CONVERSATION",
+          "link": 27
+        }
+      ],
+      "outputs": [
+        {
+          "name": "OMOST_CONVERSATION",
+          "type": "OMOST_CONVERSATION",
+          "links": null,
+          "shape": 3
+        },
+        {
+          "name": "OMOST_CANVAS_CONDITIONING",
+          "type": "OMOST_CANVAS_CONDITIONING",
+          "links": [
+            30
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "OmostLLMChatNode"
+      },
+      "widgets_values": [
+        "change the dragon to a dinosaur",
+        4096,
+        0.9,
+        0.6,
+        911366815263218,
+        "randomize"
+      ]
+    }
+  ],
+  "links": [
+    [
+      26,
+      10,
+      0,
+      25,
+      0,
+      "OMOST_LLM"
+    ],
+    [
+      27,
+      25,
+      0,
+      26,
+      1,
+      "OMOST_CONVERSATION"
+    ],
+    [
+      28,
+      10,
+      0,
+      26,
+      0,
+      "OMOST_LLM"
+    ],
+    [
+      29,
+      25,
+      1,
+      23,
+      0,
+      "*"
+    ],
+    [
+      30,
+      26,
+      1,
+      19,
+      0,
+      "*"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1.464100000000001,
+      "offset": [
+        74.65755379746918,
+        157.3509957359641
+      ]
+    },
+    "info": {
+      "name": "workflow",
+      "author": "",
+      "description": "",
+      "version": "1",
+      "created": "2024-06-03T15:41:46.655Z",
+      "modified": "2024-06-05T14:17:07.712Z",
+      "software": "ComfyUI"
+    }
+  },
+  "version": 0.4
+}
