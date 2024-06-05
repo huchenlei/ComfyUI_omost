@@ -314,7 +314,7 @@ class OmostLayoutCondNode:
         def convert_comfy_tokens(
             comfy_tokens: list[ComfyCLIPTokensWithWeight],
         ) -> list[int]:
-            assert len(comfy_tokens) == 1
+            assert len(comfy_tokens) >= 1
             tokens: list[int] = [token for token, _ in comfy_tokens[0]]
             # Strip the first token which is the CLIP prefix.
             # Strip padding tokens.
