@@ -6,11 +6,28 @@ ComfyUI implementation of [Omost](https://github.com/lllyasviel/Omost).
 The node structure in this repo are subject to change in recent development.
 
 ## How to use
+
 As you can see from the screenshot, there are 2 parts of omost:
 - LLM Chat
 - Region Condition
 
-LLM Chat allows user interact with LLM to obtain a JSON-like structure. You can use the show-anything node to display the json text and save it for later. The LLM runs slow. Each chat takes about 3~5min on 4090. Here is the JSON output used in the screenshot.
+### LLM Chat
+LLM Chat allows user interact with LLM to obtain a JSON-like structure. There are 3 nodes in this pack to interact with the Omost LLM:
+- `Omost LLM Loader`: Load a LLM
+- `Omost LLM Chat`: Chat with LLM to obtain JSON layout prompt
+- `Omost Load Canvas Conditioning`: Load the JSON layout prompt previously saved
+
+Optionally you can use the show-anything node to display the json text and save it for later.
+The LLM runs slow. Each chat takes about 3~5min on 4090.
+
+Examples:
+- Simple LLM Chat: ![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/dedcb524-483f-48c0-a0d6-6cc188a0f47b)
+- Multi-round LLM Chat: ![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/090cd1b9-d433-4a5f-b485-a49d4cabc461)
+
+Here is the a sample JSON output used in the examples:
+<details>
+  <summary>Click to expand JSON</summary>
+
 ```json
 [
     {
@@ -179,7 +196,9 @@ LLM Chat allows user interact with LLM to obtain a JSON-like structure. You can 
     }
 ]
 ```
+</details>
 
+### Region condition
 Region condition part converts the JSON condition to ComfyUI's area format. Under the hood, it is calling `ConditioningSetMask` node to set non-overlap area for each cond.
 According to https://github.com/lllyasviel/Omost#regional-prompter, original Omost repo is using method 3, while ComfyUI's built-in method is method 2. So expect there to be some
 difference on results. I will implement ComfyUI version of [densediffusion](https://github.com/naver-ai/DenseDiffusion) soon.
@@ -192,8 +211,12 @@ There are 2 overlap methods:
 Optionally you can also pass the image generated from Omost canvas as initial latent as described in the original Omost repo:
 ![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/f913d141-9045-41fa-998f-770a840adc69)
 
+### Compose with other control methods
+You can freely compose the region condition with other control methods like ControlNet/IPAdapter. Following workflow applies an ipadapter model to the character region by selecting the corresponding mask.
+![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/191a5ea1-776a-42da-89ee-fd17a3a08eae)
 
 ## TODOs
+- Add seed to LLM Chat node
 - Implement Omost's region area cond ([DenseDiffusion](https://github.com/naver-ai/DenseDiffusion))
 - Add a progress bar to the Chat node
 - A region condition editor for easier manipulation post generation
