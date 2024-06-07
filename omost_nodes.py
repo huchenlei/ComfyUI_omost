@@ -312,51 +312,14 @@ class OmostRenderCanvasConditioningNode:
         )
 
 
-class OmostLayoutCondNode:
-    """Apply Omost layout with ComfyUI's area condition system."""
+class PromptEncoding:
+    """Namespace for different prompt encoding methods"""
 
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "canvas_conds": ("OMOST_CANVAS_CONDITIONING",),
-                "clip": ("CLIP",),
-                "global_strength": (
-                    "FLOAT",
-                    {"min": 0.0, "max": 1.0, "step": 0.01, "default": 0.2},
-                ),
-                "region_strength": (
-                    "FLOAT",
-                    {"min": 0.0, "max": 1.0, "step": 0.01, "default": 0.8},
-                ),
-                "overlap_method": (
-                    [e.value for e in OmostLayoutCondNode.AreaOverlapMethod],
-                    {"default": OmostLayoutCondNode.AreaOverlapMethod.AVERAGE.value},
-                ),
-            },
-            "optional": {
-                "positive": ("CONDITIONING",),
-            },
-        }
+    ENCODE_NODE = CLIPTextEncode()
 
-    RETURN_TYPES = ("CONDITIONING", "MASK")
-    FUNCTION = "layout_cond"
-    CATEGORY = "omost"
-
-    class AreaOverlapMethod(Enum):
-        """Methods to handle overlapping areas."""
-
-        # The top layer overwrites the bottom layer.
-        OVERLAY = "overlay"
-        # Take the average of the two layers.
-        AVERAGE = "average"
-
-    def __init__(self):
-        self.cond_set_mask_node = ConditioningSetMask()
-        self.clip_text_encode_node = CLIPTextEncode()
-
+    @staticmethod
     def encode_bag_of_subprompts(
-        self, clip: CLIP, prefixes: list[str], suffixes: list[str]
+        clip: CLIP, prefixes: list[str], suffixes: list[str]
     ) -> ComfyUIConditioning:
         """@Deprecated
         Simplified way to encode bag of subprompts without omost's greedy approach.
@@ -367,7 +330,7 @@ class OmostLayoutCondNode:
         for target in suffixes:
             complete_prompt = "".join(prefixes + [target])
             logger.debug(f"Encoding prompt: {complete_prompt}")
-            cond: ComfyUIConditioning = self.clip_text_encode_node.encode(
+            cond: ComfyUIConditioning = PromptEncoding.ENCODE_NODE.encode(
                 clip, complete_prompt
             )[0]
             assert len(cond) == 1
@@ -385,8 +348,9 @@ class OmostLayoutCondNode:
             ]
         ]
 
+    @staticmethod
     def encode_subprompts(
-        self, clip: CLIP, prefixes: list[str], suffixes: list[str]
+        clip: CLIP, prefixes: list[str], suffixes: list[str]
     ) -> ComfyUIConditioning:
         """@Deprecated
         Simplified way to encode subprompts by joining them together. This is
@@ -398,12 +362,14 @@ class OmostLayoutCondNode:
             ["".join(prefixes + [target]) for target in suffixes]
         )
         logger.debug("Encoding prompt: %s", complete_prompt)
-        return self.clip_text_encode_node.encode(clip, complete_prompt)[0]
+        return PromptEncoding.ENCODE_NODE.encode(clip, complete_prompt)[0]
 
+    @staticmethod
     def encode_bag_of_subprompts_greedy(
-        self, clip: CLIP, prefixes: list[str], suffixes: list[str]
+        clip: CLIP, prefixes: list[str], suffixes: list[str]
     ) -> ComfyUIConditioning:
-        """Encode bag of subprompts with greedy approach."""
+        """Encode bag of subprompts with greedy approach. This approach is used
+        by the original Omost repo."""
 
         def convert_comfy_tokens(
             comfy_tokens: list[ComfyCLIPTokensWithWeight],
@@ -453,6 +419,49 @@ class OmostLayoutCondNode:
                 {"pooled_output": encoder_output.pooler},
             ]
         ]
+
+
+class OmostLayoutCondNode:
+    """Apply Omost layout with ComfyUI's area condition system."""
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "canvas_conds": ("OMOST_CANVAS_CONDITIONING",),
+                "clip": ("CLIP",),
+                "global_strength": (
+                    "FLOAT",
+                    {"min": 0.0, "max": 1.0, "step": 0.01, "default": 0.2},
+                ),
+                "region_strength": (
+                    "FLOAT",
+                    {"min": 0.0, "max": 1.0, "step": 0.01, "default": 0.8},
+                ),
+                "overlap_method": (
+                    [e.value for e in OmostLayoutCondNode.AreaOverlapMethod],
+                    {"default": OmostLayoutCondNode.AreaOverlapMethod.AVERAGE.value},
+                ),
+            },
+            "optional": {
+                "positive": ("CONDITIONING",),
+            },
+        }
+
+    RETURN_TYPES = ("CONDITIONING", "MASK")
+    FUNCTION = "layout_cond"
+    CATEGORY = "omost"
+
+    class AreaOverlapMethod(Enum):
+        """Methods to handle overlapping areas."""
+
+        # The top layer overwrites the bottom layer.
+        OVERLAY = "overlay"
+        # Take the average of the two layers.
+        AVERAGE = "average"
+
+    def __init__(self):
+        self.cond_set_mask_node = ConditioningSetMask()
 
     @staticmethod
     def calc_cond_mask(
@@ -520,7 +529,7 @@ class OmostLayoutCondNode:
             if not is_global:
                 prefixes = prefixes[1:]
 
-            cond: ComfyUIConditioning = self.encode_bag_of_subprompts_greedy(
+            cond: ComfyUIConditioning = PromptEncoding.encode_bag_of_subprompts_greedy(
                 clip, prefixes, canvas_cond["suffixes"]
             )
             # Set area cond
