@@ -228,15 +228,21 @@ class OmostRenderCanvasConditioningNode:
             }
         }
 
-    RETURN_TYPES = ("IMAGE",)
+    RETURN_TYPES = ("IMAGE", "MASK")
     FUNCTION = "render_canvas"
     CATEGORY = "omost"
 
     def render_canvas(
         self, canvas_conds: list[OmostCanvasCondition]
-    ) -> Tuple[torch.Tensor]:
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Render canvas conditioning to image"""
-        return (numpy2pytorch(imgs=[OmostCanvas.render_initial_latent(canvas_conds)]),)
+        return (
+            numpy2pytorch(imgs=[OmostCanvas.render_initial_latent(canvas_conds)]),
+            torch.cat(
+                [OmostCanvas.render_mask(cond).unsqueeze(0) for cond in canvas_conds],
+                dim=0,
+            ),
+        )
 
 
 class OmostLayoutCondNode:
