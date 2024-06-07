@@ -13,6 +13,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 import comfy.model_management
+from comfy.model_patcher import ModelPatcher
 from comfy.sd import CLIP
 from nodes import CLIPTextEncode, ConditioningSetMask
 from .lib_omost.canvas import (
@@ -42,6 +43,9 @@ def create_logger(level=logging.INFO):
 
 
 logger = create_logger(level=logging.INFO)
+
+# Canvas size used in original Omost repo.
+CANVAS_SIZE = 90
 
 
 # Type definitions.
@@ -421,6 +425,71 @@ class PromptEncoding:
         ]
 
 
+class OmostDenseDiffusionLayoutNode:
+    """Apply Omost layout with Omost's area condition system. This is the regional
+    prompt system implemented in the original Omost repo.
+
+    You need to install https://github.com/huchenlei/ComfyUI_densediffusion to use this node.
+    """
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "model": ("MODEL",),
+                "canvas_conds": ("OMOST_CANVAS_CONDITIONING",),
+                "clip": ("CLIP",),
+            },
+        }
+
+    RETURN_TYPES = ("MODEL", "CONDITIONING")
+    FUNCTION = "layout_cond"
+    CATEGORY = "omost"
+
+    def __init__(self):
+        try:
+            from custom_nodes.ComfyUI_densediffusion.densediffusion_node import (
+                DenseDiffusionApplyNode,
+                DenseDiffusionAddCondNode,
+            )
+        except Exception as e:
+            logger.error(
+                "Failed to import ComfyUI_densediffusion. Make sure it's installed."
+                "https://github.com/huchenlei/ComfyUI_densediffusion"
+            )
+            raise e
+
+        self.dense_diffusion_apply_node = DenseDiffusionApplyNode()
+        self.dense_diffusion_add_cond_node = DenseDiffusionAddCondNode()
+
+    def layout_cond(
+        self,
+        model: ModelPatcher,
+        canvas_conds: list[OmostCanvasCondition],
+        clip: CLIP,
+    ) -> tuple[ModelPatcher, ComfyUIConditioning]:
+        """Layout conditioning"""
+        work_model: ModelPatcher = model.clone()
+
+        for canvas_cond in canvas_conds:
+            mask = torch.ones([CANVAS_SIZE, CANVAS_SIZE], dtype=torch.float32)
+            a, b, c, d = canvas_cond["rect"]
+            mask[a:b, c:d] = 1.0
+
+            cond: ComfyUIConditioning = PromptEncoding.encode_bag_of_subprompts_greedy(
+                clip, canvas_cond["prefixes"], canvas_cond["suffixes"]
+            )
+            # Set area cond
+            work_model = self.dense_diffusion_add_cond_node.append(
+                work_model,
+                conditioning=cond,
+                mask=mask,
+                strength=1.0,
+            )[0]
+
+        return self.dense_diffusion_apply_node.apply(work_model)
+
+
 class OmostComfyLayoutNode:
     """Apply Omost layout with ComfyUI's area condition system."""
 
@@ -469,7 +538,6 @@ class OmostComfyLayoutNode:
         method: AreaOverlapMethod = AreaOverlapMethod.OVERLAY,
     ) -> list[OmostCanvasCondition]:
         """Calculate canvas cond mask."""
-        CANVAS_SIZE = 90
         assert len(canvas_conds) > 0
         canvas_conds = canvas_conds.copy()
 
@@ -575,6 +643,7 @@ NODE_CLASS_MAPPINGS = {
     "OmostLLMHTTPServerNode": OmostLLMHTTPServerNode,
     "OmostLLMChatNode": OmostLLMChatNode,
     "OmostLayoutCondNode": OmostComfyLayoutNode,
+    "OmostDenseDiffusionLayoutNode": OmostDenseDiffusionLayoutNode,
     "OmostLoadCanvasConditioningNode": OmostLoadCanvasConditioningNode,
     "OmostRenderCanvasConditioningNode": OmostRenderCanvasConditioningNode,
 }
@@ -584,6 +653,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "OmostLLMHTTPServerNode": "Omost LLM HTTP Server",
     "OmostLLMChatNode": "Omost LLM Chat",
     "OmostLayoutCondNode": "Omost Layout Cond (ComfyUI-Area)",
+    "OmostDenseDiffusionLayoutNode": "Omost Layout Cond (OmostDenseDiffusion)",
     "OmostLoadCanvasConditioningNode": "Omost Load Canvas Conditioning",
     "OmostRenderCanvasConditioningNode": "Omost Render Canvas Conditioning",
 }
