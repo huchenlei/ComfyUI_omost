@@ -3,9 +3,12 @@ from enum import Enum
 import json
 from typing import Literal, Tuple, TypedDict, NamedTuple
 import sys
+import os
 import logging
 from typing_extensions import NotRequired
 
+import requests
+from openai import OpenAI
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -55,6 +58,12 @@ class OmostLLM(NamedTuple):
     tokenizer: AutoTokenizer
 
 
+class OmostLLMServer(NamedTuple):
+    client: OpenAI
+    model_id: str
+    tokenizer: AutoTokenizer
+
+
 ComfyUIConditioning = list  # Dummy type definitions for ComfyUI
 ComfyCLIPTokensWithWeight = list[Tuple[int, float]]
 
@@ -101,10 +110,45 @@ class OmostLLMLoaderNode:
             torch_dtype=dtype,  # This is computation type, not load/memory type. The loading quant type is baked in config.
             token=HF_TOKEN,
             device_map="auto",  # This will load model to gpu with an offload system
+            trust_remote_code=True,
         )
         llm_tokenizer = AutoTokenizer.from_pretrained(llm_name, token=HF_TOKEN)
 
         return (OmostLLM(llm_model, llm_tokenizer),)
+
+
+class OmostLLMHTTPServerNode:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "address": ("STRING", {"multiline": True}),
+            }
+        }
+
+    RETURN_TYPES = ("OMOST_LLM",)
+    FUNCTION = "init_client"
+    CATEGORY = "omost"
+
+    def init_client(self, address: str) -> Tuple[OmostLLMServer]:
+        """Initialize LLM client with HTTP server address."""
+        if address.endswith("v1"):
+            server_address = address
+            server_info_url = address.replace("v1", "info")
+        else:
+            server_address = os.path.join(address, "v1")
+            server_info_url = os.path.join(address, "info")
+
+        client = OpenAI(base_url=server_address, api_key="_")
+        
+        # Get model_id from server info
+        server_info = requests.get(server_info_url, timeout=5).json()
+        model_id = server_info["model_id"]
+        
+        # Load tokenizer
+        llm_tokenizer = AutoTokenizer.from_pretrained(model_id)
+
+        return (OmostLLMServer(client, model_id, llm_tokenizer), )
 
 
 class OmostLLMChatNode:
@@ -138,41 +182,14 @@ class OmostLLMChatNode:
         "OMOST_CONVERSATION",
         "OMOST_CANVAS_CONDITIONING",
     )
-    FUNCTION = "run_llm_with_seed"
+    FUNCTION = "run_llm"
     CATEGORY = "omost"
 
-    def run_llm_with_seed(
+    def prepare_conversation(
         self,
-        llm: OmostLLM,
         text: str,
-        max_new_tokens: int,
-        top_p: float,
-        temperature: float,
-        seed: int,
-        conversation: OmostConversation | None = None,
-    ) -> Tuple[OmostConversation, OmostCanvas]:
-        if seed > 0xFFFFFFFF:
-            seed = seed & 0xFFFFFFFF
-            logger.warning("Seed is too large. Truncating to 32-bit: %d", seed)
-
-        with scoped_torch_random(seed), scoped_numpy_random(seed):
-            return self.run_llm(
-                llm, text, max_new_tokens, top_p, temperature, conversation
-            )
-
-    def run_llm(
-        self,
-        llm: OmostLLM,
-        text: str,
-        max_new_tokens: int,
-        top_p: float,
-        temperature: float,
-        conversation: OmostConversation | None = None,
-    ) -> Tuple[OmostConversation, OmostCanvas]:
-        """Run LLM on text"""
-        llm_tokenizer: AutoTokenizer = llm.tokenizer
-        llm_model: AutoModelForCausalLM = llm.model
-
+        conversation: OmostConversation | None = None
+    ) -> Tuple[OmostConversation, OmostConversation, OmostConversationItem]:
         conversation = conversation or []  # Default to empty list
         system_conversation_item: OmostConversationItem = {
             "role": "system",
@@ -187,26 +204,72 @@ class OmostLLMChatNode:
             *conversation,
             user_conversation_item,
         ]
+        return conversation, input_conversation, user_conversation_item
 
-        input_ids: torch.Tensor = llm_tokenizer.apply_chat_template(
-            input_conversation, return_tensors="pt", add_generation_prompt=True
-        ).to(llm_model.device)
-        input_length = input_ids.shape[1]
+    def run_local_llm(
+        self, 
+        llm: OmostLLM,
+        input_conversation: list[OmostConversationItem],
+        max_new_tokens: int,
+        top_p: float,
+        temperature: float,
+        seed: int,
+    ) -> str:
+        with scoped_torch_random(seed), scoped_numpy_random(seed):
+            llm_tokenizer: AutoTokenizer = llm.tokenizer
+            llm_model: AutoModelForCausalLM = llm.model
 
-        output_ids: torch.Tensor = llm_model.generate(
-            input_ids=input_ids,
-            max_new_tokens=max_new_tokens,
-            temperature=temperature,
-            top_p=top_p,
-            do_sample=temperature != 0,
-        )
-        generated_ids = output_ids[:, input_length:]
-        generated_text: str = llm_tokenizer.decode(
-            generated_ids[0],
-            skip_special_tokens=True,
-            skip_prompt=True,
-            timeout=10,
-        )
+            input_ids: torch.Tensor = llm_tokenizer.apply_chat_template(
+                input_conversation, return_tensors="pt", add_generation_prompt=True
+            ).to(llm_model.device)
+            input_length = input_ids.shape[1]
+
+            output_ids: torch.Tensor = llm_model.generate(
+                input_ids=input_ids,
+                max_new_tokens=max_new_tokens,
+                temperature=temperature,
+                top_p=top_p,
+                do_sample=temperature != 0,
+            )
+            generated_ids = output_ids[:, input_length:]
+            generated_text: str = llm_tokenizer.decode(
+                generated_ids[0],
+                skip_special_tokens=True,
+                skip_prompt=True,
+                timeout=10,
+            )
+            return generated_text
+
+    def run_llm(
+        self,
+        llm: OmostLLM | OmostLLMServer,
+        text: str,
+        max_new_tokens: int,
+        top_p: float, 
+        temperature: float,
+        seed: int,
+        conversation: OmostConversation | None = None,
+    ) -> Tuple[OmostConversation, OmostCanvas]:
+        """Run LLM on text"""
+        if seed > 0xFFFFFFFF:
+            seed = seed & 0xFFFFFFFF
+            logger.warning("Seed is too large. Truncating to 32-bit: %d", seed)
+        
+        conversation, input_conversation, user_conversation_item = self.prepare_conversation(text, conversation)
+
+        if isinstance(llm, OmostLLM):
+            generated_text = self.run_local_llm(
+                llm, input_conversation, max_new_tokens, top_p, temperature, seed
+            )
+        else:
+            generated_text = llm.client.chat.completions.create(
+                model=llm.model_id,
+                messages=input_conversation,
+                top_p=top_p,
+                temperature=temperature,
+                max_tokens=max_new_tokens,
+                seed=seed,
+            ).choices[0].message.content
 
         output_conversation = [
             *conversation,
@@ -490,6 +553,7 @@ class OmostLoadCanvasConditioningNode:
 
 NODE_CLASS_MAPPINGS = {
     "OmostLLMLoaderNode": OmostLLMLoaderNode,
+    "OmostLLMHTTPServerNode": OmostLLMHTTPServerNode,
     "OmostLLMChatNode": OmostLLMChatNode,
     "OmostLayoutCondNode": OmostLayoutCondNode,
     "OmostLoadCanvasConditioningNode": OmostLoadCanvasConditioningNode,
@@ -498,6 +562,7 @@ NODE_CLASS_MAPPINGS = {
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "OmostLLMLoaderNode": "Omost LLM Loader",
+    "OmostLLMHTTPServerNode": "Omost LLM HTTP Server",
     "OmostLLMChatNode": "Omost LLM Chat",
     "OmostLayoutCondNode": "Omost Layout Cond (ComfyUI-Area)",
     "OmostLoadCanvasConditioningNode": "Omost Load Canvas Conditioning",
