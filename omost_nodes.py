@@ -472,10 +472,6 @@ class OmostDenseDiffusionLayoutNode:
         work_model: ModelPatcher = model.clone()
 
         for canvas_cond in canvas_conds:
-            mask = torch.ones([CANVAS_SIZE, CANVAS_SIZE], dtype=torch.float32)
-            a, b, c, d = canvas_cond["rect"]
-            mask[a:b, c:d] = 1.0
-
             cond: ComfyUIConditioning = PromptEncoding.encode_bag_of_subprompts_greedy(
                 clip, canvas_cond["prefixes"], canvas_cond["suffixes"]
             )
@@ -483,7 +479,7 @@ class OmostDenseDiffusionLayoutNode:
             work_model = self.dense_diffusion_add_cond_node.append(
                 work_model,
                 conditioning=cond,
-                mask=mask,
+                mask=OmostCanvas.render_mask(canvas_cond),
                 strength=1.0,
             )[0]
 
