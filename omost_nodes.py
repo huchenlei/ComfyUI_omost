@@ -421,7 +421,7 @@ class PromptEncoding:
         ]
 
 
-class OmostLayoutCondNode:
+class OmostComfyLayoutNode:
     """Apply Omost layout with ComfyUI's area condition system."""
 
     @classmethod
@@ -439,8 +439,8 @@ class OmostLayoutCondNode:
                     {"min": 0.0, "max": 1.0, "step": 0.01, "default": 0.8},
                 ),
                 "overlap_method": (
-                    [e.value for e in OmostLayoutCondNode.AreaOverlapMethod],
-                    {"default": OmostLayoutCondNode.AreaOverlapMethod.AVERAGE.value},
+                    [e.value for e in OmostComfyLayoutNode.AreaOverlapMethod],
+                    {"default": OmostComfyLayoutNode.AreaOverlapMethod.AVERAGE.value},
                 ),
             },
             "optional": {
@@ -480,7 +480,7 @@ class OmostLayoutCondNode:
         region_conds = canvas_conds[1:]
 
         canvas_state = torch.zeros([CANVAS_SIZE, CANVAS_SIZE], dtype=torch.float32)
-        if method == OmostLayoutCondNode.AreaOverlapMethod.OVERLAY:
+        if method == OmostComfyLayoutNode.AreaOverlapMethod.OVERLAY:
             for canvas_cond in region_conds[::-1]:
                 a, b, c, d = canvas_cond["rect"]
                 mask = torch.zeros([CANVAS_SIZE, CANVAS_SIZE], dtype=torch.float32)
@@ -488,7 +488,7 @@ class OmostLayoutCondNode:
                 mask = mask * (1 - canvas_state)
                 canvas_state += mask
                 canvas_cond["mask"] = mask
-        elif method == OmostLayoutCondNode.AreaOverlapMethod.AVERAGE:
+        elif method == OmostComfyLayoutNode.AreaOverlapMethod.AVERAGE:
             canvas_state += 1e-6  # Avoid division by zero
             for canvas_cond in region_conds:
                 a, b, c, d = canvas_cond["rect"]
@@ -513,11 +513,11 @@ class OmostLayoutCondNode:
         positive: ComfyUIConditioning | None = None,
     ):
         """Layout conditioning"""
-        overlap_method = OmostLayoutCondNode.AreaOverlapMethod(overlap_method)
+        overlap_method = OmostComfyLayoutNode.AreaOverlapMethod(overlap_method)
         positive: ComfyUIConditioning = positive or []
         positive = positive.copy()
         masks: list[torch.Tensor] = []
-        canvas_conds = OmostLayoutCondNode.calc_cond_mask(
+        canvas_conds = OmostComfyLayoutNode.calc_cond_mask(
             canvas_conds, method=overlap_method
         )
 
@@ -574,7 +574,7 @@ NODE_CLASS_MAPPINGS = {
     "OmostLLMLoaderNode": OmostLLMLoaderNode,
     "OmostLLMHTTPServerNode": OmostLLMHTTPServerNode,
     "OmostLLMChatNode": OmostLLMChatNode,
-    "OmostLayoutCondNode": OmostLayoutCondNode,
+    "OmostLayoutCondNode": OmostComfyLayoutNode,
     "OmostLoadCanvasConditioningNode": OmostLoadCanvasConditioningNode,
     "OmostRenderCanvasConditioningNode": OmostRenderCanvasConditioningNode,
 }
