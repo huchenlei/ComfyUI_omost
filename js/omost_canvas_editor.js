@@ -75,9 +75,6 @@ app.registerExtension({
                 options.unshift({
                     content: "Open in Omost Canvas Editor",
                     callback: () => {
-                        ComfyApp.copyToClipspace(this);
-                        ComfyApp.clipspace_return_node = this;
-
                         let dlg = OmostCanvasDialog.getInstance();
                         dlg.show();
                     },
