@@ -1,7 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { ComfyDialog, $el } from "../../scripts/ui.js";
 import { ComfyApp } from "../../scripts/app.js";
-import { ClipspaceDialog } from "../../extensions/core/clipspace.js";
 
 
 function addMenuHandler(nodeType, cb) {
@@ -39,11 +38,9 @@ class OmostCanvasDialog extends ComfyDialog {
                     width: "100%",
                     height: "100%",
                 },
-            }, [
-                $el("div", {}, "hello world"),
-                ...this.createButtons(),
-            ]),
+            }, this.createButtons()),
         ]);
+        this.is_layout_created = false;
     }
 
     createButtons() {
@@ -57,8 +54,39 @@ class OmostCanvasDialog extends ComfyDialog {
         ];
     }
 
+    close() {
+        const targetNode = ComfyApp.clipspace_return_node;
+        const textAreaElement = targetNode.widgets[0].element;
+        textAreaElement.value = this.textAreaElement.value;
+        super.close();
+    }
+
     show() {
+        if (!this.is_layout_created) {
+            this.createLayout();
+            this.is_layout_created = true;
+        }
+
+        const targetNode = ComfyApp.clipspace_return_node;
+        const textAreaElement = targetNode.widgets[0].element;
+        this.setCanvasJSONString(textAreaElement.value);
+
         this.element.style.display = "flex";
+    }
+
+    createLayout() {
+        this.textAreaElement = $el("textarea", {
+            style: {
+                width: "100%",
+                height: "100%",
+            },
+        });
+
+        this.element.appendChild(this.textAreaElement);
+    }
+
+    setCanvasJSONString(jsonString) {
+        this.textAreaElement.value = jsonString;
     }
 }
 
@@ -75,7 +103,11 @@ app.registerExtension({
                 options.unshift({
                     content: "Open in Omost Canvas Editor",
                     callback: () => {
-                        let dlg = OmostCanvasDialog.getInstance();
+                        // `this` is the node instance
+                        ComfyApp.copyToClipspace(this);
+                        ComfyApp.clipspace_return_node = this;
+
+                        const dlg = OmostCanvasDialog.getInstance();
                         dlg.show();
                     },
                 });
