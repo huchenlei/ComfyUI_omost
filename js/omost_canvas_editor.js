@@ -13,17 +13,6 @@ function addMenuHandler(nodeType, cb) {
     };
 }
 
-function addOnNodeCreated(nodeType, cb) {
-    const onNodeCreated = nodeType.prototype.onNodeCreated;
-    nodeType.prototype.onNodeCreated = function () {
-        const r = onNodeCreated
-            ? onNodeCreated.apply(this, arguments)
-            : undefined;
-        cb.apply(this, arguments)
-        return r;
-    }
-}
-
 class OmostCanvasDialog extends ComfyDialog {
     static instance = null;
 
