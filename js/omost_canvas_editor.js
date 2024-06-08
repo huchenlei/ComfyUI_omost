@@ -69,17 +69,6 @@ function isOmostLoadCanvasConditioningNode(nodeData) {
 app.registerExtension({
     name: "huchenlei.EditOmostCanvas",
 
-    init() {
-        const callback = () => {
-            let dlg = OmostCanvasDialog.getInstance();
-            dlg.show();
-        };
-        const context_predicate = () => {
-            return ComfyApp.clipspace && isOmostLoadCanvasConditioningNode(ComfyApp.clipspace_return_node);
-        };
-        ClipspaceDialog.registerButton("EditOmostCanvas", context_predicate, callback);
-    },
-
     async beforeRegisterNodeDef(nodeType, nodeData) {
         if (isOmostLoadCanvasConditioningNode(nodeData)) {
             addMenuHandler(nodeType, function (_, options) {
