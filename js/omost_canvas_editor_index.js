@@ -80,6 +80,7 @@ class OmostCanvasDialog extends ComfyDialog {
             style: {
                 width: "100%",
                 height: "100%",
+                border: "none",
             },
         });
         const modalContent = this.element.querySelector(".comfy-modal-content");
