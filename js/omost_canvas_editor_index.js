@@ -27,7 +27,6 @@ class OmostCanvasDialog extends ComfyDialog {
     constructor() {
         super();
         this.element = $el("div.comfy-modal", {
-            id: "comfyui-openpose-editor",
             parent: document.body,
             style: {
                 width: "80vw",
@@ -83,8 +82,12 @@ class OmostCanvasDialog extends ComfyDialog {
                 height: "100%",
             },
         });
-
-        this.element.appendChild(this.iframeElement);
+        const modalContent = this.element.querySelector(".comfy-modal-content");
+        while (modalContent.firstChild) {
+            modalContent.removeChild(modalContent.firstChild);
+        }
+        modalContent.appendChild(this.iframeElement);
+        modalContent.appendChild(...this.createButtons());
     }
 
     waitIframeReady() {
