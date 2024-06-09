@@ -13,6 +13,7 @@ function addMenuHandler(nodeType, cb) {
 }
 
 class OmostCanvasDialog extends ComfyDialog {
+    static timeout = 5000;
     static instance = null;
 
     static getInstance() {
@@ -54,14 +55,14 @@ class OmostCanvasDialog extends ComfyDialog {
         ];
     }
 
-    close() {
+    async close() {
         const targetNode = ComfyApp.clipspace_return_node;
         const textAreaElement = targetNode.widgets[0].element;
-        textAreaElement.value = this.textAreaElement.value;
+        textAreaElement.value = await this.getCanvasJSONString();
         super.close();
     }
 
-    show() {
+    async show() {
         if (!this.is_layout_created) {
             this.createLayout();
             this.is_layout_created = true;
@@ -69,24 +70,61 @@ class OmostCanvasDialog extends ComfyDialog {
 
         const targetNode = ComfyApp.clipspace_return_node;
         const textAreaElement = targetNode.widgets[0].element;
-        this.setCanvasJSONString(textAreaElement.value);
-
         this.element.style.display = "flex";
+        await this.waitIframeReady();
+        this.setCanvasJSONString(textAreaElement.value);
     }
 
     createLayout() {
-        this.textAreaElement = $el("textarea", {
+        this.iframeElement = $el("iframe", {
+            src: "http://localhost:5174",
             style: {
                 width: "100%",
                 height: "100%",
             },
         });
 
-        this.element.appendChild(this.textAreaElement);
+        this.element.appendChild(this.iframeElement);
+    }
+
+    waitIframeReady() {
+        return new Promise((resolve, reject) => {
+            window.addEventListener("message", (event) => {
+                if (event.source !== this.iframeElement.contentWindow) {
+                    return;
+                }
+                if (event.data.type === "ready") {
+                    resolve();
+                }
+            });
+            setTimeout(() => {
+                reject(new Error("Timeout"));
+            }, OmostCanvasDialog.timeout);
+        });
+    }
+
+    getCanvasJSONString() {
+        return new Promise((resolve, reject) => {
+            window.addEventListener("message", (event) => {
+                if (event.source !== this.iframeElement.contentWindow) {
+                    return;
+                }
+                if (event.data.type === "save") {
+                    resolve(JSON.stringify(event.data.regions));
+                }
+            });
+
+            this.iframeElement.contentWindow.postMessage({ type: "save" }, "*");
+
+            setTimeout(() => {
+                reject(new Error("Timeout"));
+            }, OmostCanvasDialog.timeout);
+        });
     }
 
     setCanvasJSONString(jsonString) {
-        this.textAreaElement.value = jsonString;
+        this.iframeElement.contentWindow.postMessage(
+            { type: "update", regions: JSON.parse(jsonString) }, "*");
     }
 }
 
