@@ -24,7 +24,7 @@ LLM Chat allows user interact with LLM to obtain a JSON-like structure. There ar
 - `Omost Load Canvas Conditioning`: Load the JSON layout prompt previously saved
 
 Optionally you can use the show-anything node to display the json text and save it for later.
-The LLM runs slow. Each chat takes about 3~5min on 4090.
+The official LLM's method runs slow. Each chat takes about 3~5min on 4090. (But now we can use TGI to deploy accelerated inference. For details, refer [**Accelerating LLM**](#accelerating-llm).)
 
 Examples:
 - Simple LLM Chat: ![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/896eb810-6137-4682-8236-67cfefdbae99)
@@ -227,3 +227,39 @@ You can use the built-in region editor on `Omost Load Canvas Conditioning` node 
 ### Compose with other control methods
 You can freely compose the region condition with other control methods like ControlNet/IPAdapter. Following workflow applies an ipadapter model to the character region by selecting the corresponding mask.
 ![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/191a5ea1-776a-42da-89ee-fd17a3a08eae)
+
+### Accelerating LLM
+
+Now you can leverage [TGI](https://huggingface.co/docs/text-generation-inference) to deploy LLM services and achieve up to 6x faster inference speeds. If you need long-term support for your work, this method is highly recommended to save you a lot of time.
+
+**Preparation**: You will need an additional 20GB of VRAM to deploy an 8B LLM (trading space for time).
+
+**First**, you can easily start the service using Docker with the following steps:
+```
+port=8080
+modelID=lllyasviel/omost-llama-3-8b
+memoryRate=0.9 # Normal operation requires 20GB of VRAM, adjust the ratio according to the VRAM of the deployment machine
+volume=$HOME/.cache/huggingface/hub # Model cache files
+
+docker run --gpus all -p $port:80 \
+    -v $volume:/data \
+    ghcr.io/huggingface/text-generation-inference:2.0.4 \
+    --model-id $modelID --max-total-tokens 9216 --cuda-memory-fraction $memoryRate
+```
+Once the service is successfully started, you will see a Connected log message. 
+
+(Note: If you get stuck while downloading the model, try using a network proxy.)
+
+**Then**, test if the LLM service has successfully started.
+```
+curl 127.0.0.1:8080/generate \
+    -X POST \
+    -d '{"inputs":"What is Deep Omost?","parameters":{"max_new_tokens":20}}' \
+    -H 'Content-Type: application/json'
+```
+
+**Next**, add an `Omost LLM HTTP Server` node and enter the service address of the LLM.
+![image](https://github.com/huchenlei/ComfyUI_omost/assets/6883957/8cf1f3a8-f4d7-416c-a1d0-be27bc300c96)
+
+
+For more information about TGI, refer to the official documentation: https://huggingface.co/docs/text-generation-inference/quicktour
