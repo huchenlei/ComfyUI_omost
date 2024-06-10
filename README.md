@@ -3,9 +3,9 @@
 ComfyUI implementation of [Omost](https://github.com/lllyasviel/Omost), and everything about regional prompt.
 
 ## News
+- [2024-06-10] Add OmostDenseDiffusion regional prompt backend support (The same as original Omost repo) https://github.com/huchenlei/ComfyUI_omost/pull/27
 - [2024-06-09] Canvas editor added https://github.com/huchenlei/ComfyUI_omost/pull/28
 - [2024-06-09] Add option to connect to external LLM service https://github.com/huchenlei/ComfyUI_omost/pull/25
-- [2024-06-10] Add OmostDenseDiffusion regional prompt backend support (The same as original Omost repo) https://github.com/huchenlei/ComfyUI_omost/pull/27
 
 ## TODOs
 - Add a progress bar to the Chat node
