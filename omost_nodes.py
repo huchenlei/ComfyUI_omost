@@ -13,6 +13,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 import comfy.model_management
+from comfy.model_patcher import ModelPatcher
 from comfy.sd import CLIP
 from nodes import CLIPTextEncode, ConditioningSetMask
 from .lib_omost.canvas import (
@@ -42,6 +43,9 @@ def create_logger(level=logging.INFO):
 
 
 logger = create_logger(level=logging.INFO)
+
+# Canvas size used in original Omost repo.
+CANVAS_SIZE = 90
 
 
 # Type definitions.
@@ -312,51 +316,14 @@ class OmostRenderCanvasConditioningNode:
         )
 
 
-class OmostLayoutCondNode:
-    """Apply Omost layout with ComfyUI's area condition system."""
+class PromptEncoding:
+    """Namespace for different prompt encoding methods"""
 
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "canvas_conds": ("OMOST_CANVAS_CONDITIONING",),
-                "clip": ("CLIP",),
-                "global_strength": (
-                    "FLOAT",
-                    {"min": 0.0, "max": 1.0, "step": 0.01, "default": 0.2},
-                ),
-                "region_strength": (
-                    "FLOAT",
-                    {"min": 0.0, "max": 1.0, "step": 0.01, "default": 0.8},
-                ),
-                "overlap_method": (
-                    [e.value for e in OmostLayoutCondNode.AreaOverlapMethod],
-                    {"default": OmostLayoutCondNode.AreaOverlapMethod.AVERAGE.value},
-                ),
-            },
-            "optional": {
-                "positive": ("CONDITIONING",),
-            },
-        }
+    ENCODE_NODE = CLIPTextEncode()
 
-    RETURN_TYPES = ("CONDITIONING", "MASK")
-    FUNCTION = "layout_cond"
-    CATEGORY = "omost"
-
-    class AreaOverlapMethod(Enum):
-        """Methods to handle overlapping areas."""
-
-        # The top layer overwrites the bottom layer.
-        OVERLAY = "overlay"
-        # Take the average of the two layers.
-        AVERAGE = "average"
-
-    def __init__(self):
-        self.cond_set_mask_node = ConditioningSetMask()
-        self.clip_text_encode_node = CLIPTextEncode()
-
+    @staticmethod
     def encode_bag_of_subprompts(
-        self, clip: CLIP, prefixes: list[str], suffixes: list[str]
+        clip: CLIP, prefixes: list[str], suffixes: list[str]
     ) -> ComfyUIConditioning:
         """@Deprecated
         Simplified way to encode bag of subprompts without omost's greedy approach.
@@ -367,7 +334,7 @@ class OmostLayoutCondNode:
         for target in suffixes:
             complete_prompt = "".join(prefixes + [target])
             logger.debug(f"Encoding prompt: {complete_prompt}")
-            cond: ComfyUIConditioning = self.clip_text_encode_node.encode(
+            cond: ComfyUIConditioning = PromptEncoding.ENCODE_NODE.encode(
                 clip, complete_prompt
             )[0]
             assert len(cond) == 1
@@ -385,8 +352,9 @@ class OmostLayoutCondNode:
             ]
         ]
 
+    @staticmethod
     def encode_subprompts(
-        self, clip: CLIP, prefixes: list[str], suffixes: list[str]
+        clip: CLIP, prefixes: list[str], suffixes: list[str]
     ) -> ComfyUIConditioning:
         """@Deprecated
         Simplified way to encode subprompts by joining them together. This is
@@ -398,12 +366,14 @@ class OmostLayoutCondNode:
             ["".join(prefixes + [target]) for target in suffixes]
         )
         logger.debug("Encoding prompt: %s", complete_prompt)
-        return self.clip_text_encode_node.encode(clip, complete_prompt)[0]
+        return PromptEncoding.ENCODE_NODE.encode(clip, complete_prompt)[0]
 
+    @staticmethod
     def encode_bag_of_subprompts_greedy(
-        self, clip: CLIP, prefixes: list[str], suffixes: list[str]
+        clip: CLIP, prefixes: list[str], suffixes: list[str]
     ) -> ComfyUIConditioning:
-        """Encode bag of subprompts with greedy approach."""
+        """Encode bag of subprompts with greedy approach. This approach is used
+        by the original Omost repo."""
 
         def convert_comfy_tokens(
             comfy_tokens: list[ComfyCLIPTokensWithWeight],
@@ -454,13 +424,156 @@ class OmostLayoutCondNode:
             ]
         ]
 
+
+class OmostDenseDiffusionLayoutNode:
+    """Apply Omost layout with Omost's area condition system. This is the regional
+    prompt system implemented in the original Omost repo.
+
+    You need to install https://github.com/huchenlei/ComfyUI_densediffusion to use this node.
+    """
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "model": ("MODEL",),
+                "canvas_conds": ("OMOST_CANVAS_CONDITIONING",),
+                "clip": ("CLIP",),
+            },
+        }
+
+    RETURN_TYPES = ("MODEL", "CONDITIONING")
+    FUNCTION = "layout_cond"
+    CATEGORY = "omost"
+
+    def __init__(self):
+        try:
+            from custom_nodes.ComfyUI_densediffusion.densediffusion_node import (
+                DenseDiffusionApplyNode,
+                DenseDiffusionAddCondNode,
+            )
+        except Exception as e:
+            logger.error(
+                "Failed to import ComfyUI_densediffusion. Make sure it's installed."
+                "https://github.com/huchenlei/ComfyUI_densediffusion"
+            )
+            raise e
+
+        self.dense_diffusion_apply_node = DenseDiffusionApplyNode()
+        self.dense_diffusion_add_cond_node = DenseDiffusionAddCondNode()
+
+    def layout_cond(
+        self,
+        model: ModelPatcher,
+        canvas_conds: list[OmostCanvasCondition],
+        clip: CLIP,
+    ) -> tuple[ModelPatcher, ComfyUIConditioning]:
+        """Layout conditioning"""
+        work_model: ModelPatcher = model.clone()
+
+        for canvas_cond in canvas_conds:
+            cond: ComfyUIConditioning = PromptEncoding.encode_bag_of_subprompts_greedy(
+                clip, canvas_cond["prefixes"], canvas_cond["suffixes"]
+            )
+            # Set area cond
+            work_model = self.dense_diffusion_add_cond_node.append(
+                work_model,
+                conditioning=cond,
+                mask=OmostCanvas.render_mask(canvas_cond),
+                strength=1.0,
+            )[0]
+
+        return self.dense_diffusion_apply_node.apply(work_model)
+
+
+class OmostGreedyBagsTextEmbeddingNode:
+    """Just encode the omost canvas conditions with greedy bags approach.
+    Ignoring region conditions."""
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "canvas_conds": ("OMOST_CANVAS_CONDITIONING",),
+                "clip": ("CLIP",),
+            },
+        }
+
+    RETURN_TYPES = ("CONDITIONING",)
+    FUNCTION = "layout_cond"
+    CATEGORY = "omost"
+
+    def layout_cond(
+        self,
+        canvas_conds: list[OmostCanvasCondition],
+        clip: CLIP,
+    ) -> tuple[ComfyUIConditioning]:
+        conds: ComfyUIConditioning = [
+            PromptEncoding.encode_bag_of_subprompts_greedy(
+                clip, canvas_cond["prefixes"], canvas_cond["suffixes"]
+            )[0]
+            for canvas_cond in canvas_conds
+        ]
+        assert len(conds) > 0
+
+        return ([
+            [
+                # cond
+                torch.cat([cond[0] for cond in conds], dim=1),
+                # pooled_output
+                {"pooled_output": conds[0][1]["pooled_output"]},
+            ]
+        ],)
+
+
+class OmostComfyLayoutNode:
+    """Apply Omost layout with ComfyUI's area condition system."""
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "canvas_conds": ("OMOST_CANVAS_CONDITIONING",),
+                "clip": ("CLIP",),
+                "global_strength": (
+                    "FLOAT",
+                    {"min": 0.0, "max": 1.0, "step": 0.01, "default": 0.2},
+                ),
+                "region_strength": (
+                    "FLOAT",
+                    {"min": 0.0, "max": 1.0, "step": 0.01, "default": 0.8},
+                ),
+                "overlap_method": (
+                    [e.value for e in OmostComfyLayoutNode.AreaOverlapMethod],
+                    {"default": OmostComfyLayoutNode.AreaOverlapMethod.AVERAGE.value},
+                ),
+            },
+            "optional": {
+                "positive": ("CONDITIONING",),
+            },
+        }
+
+    RETURN_TYPES = ("CONDITIONING", "MASK")
+    FUNCTION = "layout_cond"
+    CATEGORY = "omost"
+
+    class AreaOverlapMethod(Enum):
+        """Methods to handle overlapping areas."""
+
+        # The top layer overwrites the bottom layer.
+        OVERLAY = "overlay"
+        # Take the average of the two layers.
+        AVERAGE = "average"
+
+    def __init__(self):
+        self.cond_set_mask_node = ConditioningSetMask()
+
     @staticmethod
     def calc_cond_mask(
         canvas_conds: list[OmostCanvasCondition],
         method: AreaOverlapMethod = AreaOverlapMethod.OVERLAY,
     ) -> list[OmostCanvasCondition]:
         """Calculate canvas cond mask."""
-        CANVAS_SIZE = 90
         assert len(canvas_conds) > 0
         canvas_conds = canvas_conds.copy()
 
@@ -471,7 +584,7 @@ class OmostLayoutCondNode:
         region_conds = canvas_conds[1:]
 
         canvas_state = torch.zeros([CANVAS_SIZE, CANVAS_SIZE], dtype=torch.float32)
-        if method == OmostLayoutCondNode.AreaOverlapMethod.OVERLAY:
+        if method == OmostComfyLayoutNode.AreaOverlapMethod.OVERLAY:
             for canvas_cond in region_conds[::-1]:
                 a, b, c, d = canvas_cond["rect"]
                 mask = torch.zeros([CANVAS_SIZE, CANVAS_SIZE], dtype=torch.float32)
@@ -479,7 +592,7 @@ class OmostLayoutCondNode:
                 mask = mask * (1 - canvas_state)
                 canvas_state += mask
                 canvas_cond["mask"] = mask
-        elif method == OmostLayoutCondNode.AreaOverlapMethod.AVERAGE:
+        elif method == OmostComfyLayoutNode.AreaOverlapMethod.AVERAGE:
             canvas_state += 1e-6  # Avoid division by zero
             for canvas_cond in region_conds:
                 a, b, c, d = canvas_cond["rect"]
@@ -504,11 +617,11 @@ class OmostLayoutCondNode:
         positive: ComfyUIConditioning | None = None,
     ):
         """Layout conditioning"""
-        overlap_method = OmostLayoutCondNode.AreaOverlapMethod(overlap_method)
+        overlap_method = OmostComfyLayoutNode.AreaOverlapMethod(overlap_method)
         positive: ComfyUIConditioning = positive or []
         positive = positive.copy()
         masks: list[torch.Tensor] = []
-        canvas_conds = OmostLayoutCondNode.calc_cond_mask(
+        canvas_conds = OmostComfyLayoutNode.calc_cond_mask(
             canvas_conds, method=overlap_method
         )
 
@@ -520,7 +633,7 @@ class OmostLayoutCondNode:
             if not is_global:
                 prefixes = prefixes[1:]
 
-            cond: ComfyUIConditioning = self.encode_bag_of_subprompts_greedy(
+            cond: ComfyUIConditioning = PromptEncoding.encode_bag_of_subprompts_greedy(
                 clip, prefixes, canvas_cond["suffixes"]
             )
             # Set area cond
@@ -565,7 +678,9 @@ NODE_CLASS_MAPPINGS = {
     "OmostLLMLoaderNode": OmostLLMLoaderNode,
     "OmostLLMHTTPServerNode": OmostLLMHTTPServerNode,
     "OmostLLMChatNode": OmostLLMChatNode,
-    "OmostLayoutCondNode": OmostLayoutCondNode,
+    "OmostGreedyBagsTextEmbeddingNode": OmostGreedyBagsTextEmbeddingNode,
+    "OmostLayoutCondNode": OmostComfyLayoutNode,
+    "OmostDenseDiffusionLayoutNode": OmostDenseDiffusionLayoutNode,
     "OmostLoadCanvasConditioningNode": OmostLoadCanvasConditioningNode,
     "OmostRenderCanvasConditioningNode": OmostRenderCanvasConditioningNode,
 }
@@ -574,7 +689,9 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "OmostLLMLoaderNode": "Omost LLM Loader",
     "OmostLLMHTTPServerNode": "Omost LLM HTTP Server",
     "OmostLLMChatNode": "Omost LLM Chat",
+    "OmostGreedyBagsTextEmbeddingNode": "Omost Greedy Bags Text Embedding",
     "OmostLayoutCondNode": "Omost Layout Cond (ComfyUI-Area)",
+    "OmostDenseDiffusionLayoutNode": "Omost Layout Cond (OmostDenseDiffusion)",
     "OmostLoadCanvasConditioningNode": "Omost Load Canvas Conditioning",
     "OmostRenderCanvasConditioningNode": "Omost Render Canvas Conditioning",
 }

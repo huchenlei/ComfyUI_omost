@@ -1,0 +1,1391 @@
+{
+  "last_node_id": 91,
+  "last_link_id": 147,
+  "nodes": [
+    {
+      "id": 27,
+      "type": "VAEDecode",
+      "pos": [
+        1680,
+        1050
+      ],
+      "size": {
+        "0": 210,
+        "1": 46
+      },
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 25
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 26,
+          "slot_index": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            72
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      }
+    },
+    {
+      "id": 47,
+      "type": "SaveImage",
+      "pos": [
+        1940,
+        1050
+      ],
+      "size": {
+        "0": 513.570068359375,
+        "1": 555.1339111328125
+      },
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 72
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "ComfyUI/omost"
+      ]
+    },
+    {
+      "id": 33,
+      "type": "EmptyLatentImage",
+      "pos": [
+        804,
+        1218
+      ],
+      "size": {
+        "0": 315,
+        "1": 106
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            35,
+            119,
+            131,
+            143
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EmptyLatentImage"
+      },
+      "widgets_values": [
+        1024,
+        768,
+        1
+      ]
+    },
+    {
+      "id": 10,
+      "type": "OmostLLMLoaderNode",
+      "pos": [
+        -870,
+        1430
+      ],
+      "size": {
+        "0": 315,
+        "1": 58
+      },
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "OMOST_LLM",
+          "type": "OMOST_LLM",
+          "links": [
+            38
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "OmostLLMLoaderNode"
+      },
+      "widgets_values": [
+        "lllyasviel/omost-llama-3-8b-4bits"
+      ]
+    },
+    {
+      "id": 77,
+      "type": "VAEDecode",
+      "pos": [
+        1681,
+        439
+      ],
+      "size": {
+        "0": 210,
+        "1": 46
+      },
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 120
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 121,
+          "slot_index": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            122
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      }
+    },
+    {
+      "id": 20,
+      "type": "CLIPTextEncode",
+      "pos": [
+        724,
+        960
+      ],
+      "size": {
+        "0": 400,
+        "1": 200
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 15
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            20,
+            118,
+            130,
+            142
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "lowres, bad anatomy, bad hands, cropped, worst quality"
+      ]
+    },
+    {
+      "id": 19,
+      "type": "CheckpointLoaderSimple",
+      "pos": [
+        316,
+        695
+      ],
+      "size": {
+        "0": 315,
+        "1": 98
+      },
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            110,
+            123,
+            128,
+            140
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            15,
+            68,
+            115,
+            139
+          ],
+          "shape": 3,
+          "slot_index": 1
+        },
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            26,
+            121,
+            133,
+            145
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CheckpointLoaderSimple"
+      },
+      "widgets_values": [
+        "animagine-xl-2.0.safetensors"
+      ]
+    },
+    {
+      "id": 76,
+      "type": "KSampler",
+      "pos": [
+        1310,
+        442
+      ],
+      "size": {
+        "0": 315,
+        "1": 262
+      },
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 124
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 125
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 118
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 119
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            120
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        12349,
+        "fixed",
+        20,
+        8,
+        "dpmpp_2m_sde_gpu",
+        "karras",
+        1
+      ]
+    },
+    {
+      "id": 82,
+      "type": "KSampler",
+      "pos": [
+        1320,
+        -170
+      ],
+      "size": {
+        "0": 315,
+        "1": 262
+      },
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 128
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 135
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 130
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 131
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            132
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        12349,
+        "fixed",
+        20,
+        8,
+        "dpmpp_2m_sde_gpu",
+        "karras",
+        1
+      ]
+    },
+    {
+      "id": 78,
+      "type": "SaveImage",
+      "pos": [
+        1940,
+        440
+      ],
+      "size": {
+        "0": 513.570068359375,
+        "1": 555.1339111328125
+      },
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 122
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "ComfyUI/omost"
+      ]
+    },
+    {
+      "id": 21,
+      "type": "KSampler",
+      "pos": [
+        1329,
+        1064
+      ],
+      "size": {
+        "0": 315,
+        "1": 262
+      },
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 110
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 69
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 20
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 35
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            25
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        12349,
+        "fixed",
+        20,
+        8,
+        "dpmpp_2m_sde_gpu",
+        "karras",
+        1
+      ]
+    },
+    {
+      "id": 35,
+      "type": "OmostRenderCanvasConditioningNode",
+      "pos": [
+        1330,
+        1410
+      ],
+      "size": {
+        "0": 271.7767639160156,
+        "1": 46
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "canvas_conds",
+          "type": "OMOST_CANVAS_CONDITIONING",
+          "link": 57,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            41
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "OmostRenderCanvasConditioningNode"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 83,
+      "type": "VAEDecode",
+      "pos": [
+        1680,
+        -169
+      ],
+      "size": {
+        "0": 210,
+        "1": 46
+      },
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 132
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 133,
+          "slot_index": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            134
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      }
+    },
+    {
+      "id": 84,
+      "type": "SaveImage",
+      "pos": [
+        1938,
+        -172
+      ],
+      "size": {
+        "0": 513.570068359375,
+        "1": 555.1339111328125
+      },
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 134
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "ComfyUI/omost"
+      ]
+    },
+    {
+      "id": 44,
+      "type": "OmostLayoutCondNode",
+      "pos": [
+        787,
+        756
+      ],
+      "size": {
+        "0": 330.0874938964844,
+        "1": 147.511962890625
+      },
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "canvas_conds",
+          "type": "OMOST_CANVAS_CONDITIONING",
+          "link": 67
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 68
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            69
+          ],
+          "shape": 3
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "OmostLayoutCondNode"
+      },
+      "widgets_values": [
+        0.18,
+        0.74,
+        "average"
+      ],
+      "color": "#332922",
+      "bgcolor": "#593930"
+    },
+    {
+      "id": 36,
+      "type": "PreviewImage",
+      "pos": [
+        1655,
+        1411
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {
+        "collapsed": false
+      },
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 41
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 32,
+      "type": "OmostLoadCanvasConditioningNode",
+      "pos": [
+        670,
+        1410
+      ],
+      "size": {
+        "0": 605.3375854492188,
+        "1": 525.603271484375
+      },
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "OMOST_CANVAS_CONDITIONING",
+          "type": "OMOST_CANVAS_CONDITIONING",
+          "links": [
+            57,
+            67,
+            113,
+            138
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "OmostLoadCanvasConditioningNode"
+      },
+      "widgets_values": [
+        "[{\"rect\":[0,90,0,90],\"prefixes\":[\"An Asian girl sitting on a chair.\"],\"suffixes\":[\"The image depicts an Asian girl sitting gracefully on a chair.\",\"She has long, flowing black hair and is wearing a traditional Korean dress, known as a hanbok, which is adorned with intricate floral patterns.\",\"Her posture is relaxed yet elegant, with one hand gently resting on her knee and the other hand holding a delicate fan.\",\"The background is a simple, neutral-colored room with soft, natural light filtering in from a window.\",\"The overall atmosphere is serene and contemplative, capturing a moment of quiet reflection.\",\"Asian girl, sitting, chair, traditional dress, hanbok, floral patterns, long black hair, elegant posture, delicate fan, neutral background, natural light, serene atmosphere, contemplative, quiet reflection, simple room, graceful, intricate patterns, flowing hair, cultural attire, traditional Korean dress, relaxed posture.\"],\"color\":[211,211,211]},{\"color\":[167,202,214],\"rect\":[5,45,35,90],\"prefixes\":[\"An Asian girl sitting on a chair.\",\"Window.\"],\"suffixes\":[\"The window is a simple, rectangular frame with clear glass panes.\",\"It allows natural light to filter into the room, casting soft, diffused light over the scene.\",\"The window is partially open, with a gentle breeze creating a soft, flowing motion in the curtains.\",\"The view outside is blurred, suggesting a peaceful outdoor setting.\",\"The window adds a sense of openness and connection to the outside world, enhancing the serene and contemplative atmosphere of the image.\",\"window, rectangular frame, clear glass panes, natural light, soft light, diffused light, partially open window, gentle breeze, flowing curtains, blurred view, peaceful outdoor setting, sense of openness, connection to outside, serene atmosphere, contemplative.\",\"The window adds a sense of openness and connection to the outside world.\",\"The style is simple and natural, with a focus on soft light and gentle breeze.\",\"High-quality image with detailed textures and natural lighting.\"]},{\"color\":[255,255,240],\"rect\":[25,85,5,65],\"prefixes\":[\"An Asian girl sitting on a chair.\",\"Asian girl.\"],\"suffixes\":[\"The Asian girl is the focal point of the image.\",\"She is dressed in a traditional Korean hanbok, which is a beautiful garment made from silk and adorned with intricate floral patterns.\",\"Her black hair is long and flowing, cascading down her back in soft waves.\",\"Her expression is calm and thoughtful, with a slight smile playing on her lips.\",\"She sits gracefully on the chair, her posture relaxed yet elegant.\",\"One hand rests gently on her knee, while the other hand holds a delicate fan, adding a touch of grace to her appearance.\",\"Asian girl, focal point, traditional Korean dress, hanbok, intricate floral patterns, long black hair, flowing hair, calm expression, thoughtful, slight smile, graceful posture, relaxed, elegant, delicate fan, cultural attire.\",\"The atmosphere is serene and contemplative, capturing a moment of quiet reflection.\",\"The style is elegant and traditional, with a focus on cultural attire and graceful posture.\",\"High-quality image with detailed textures and natural lighting.\"]}]"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 34,
+      "type": "OmostLLMChatNode",
+      "pos": [
+        -490,
+        1430
+      ],
+      "size": {
+        "0": 400,
+        "1": 216
+      },
+      "flags": {},
+      "order": 4,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "llm",
+          "type": "OMOST_LLM",
+          "link": 38
+        },
+        {
+          "name": "conversation",
+          "type": "OMOST_CONVERSATION",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "OMOST_CONVERSATION",
+          "type": "OMOST_CONVERSATION",
+          "links": null,
+          "shape": 3
+        },
+        {
+          "name": "OMOST_CANVAS_CONDITIONING",
+          "type": "OMOST_CANVAS_CONDITIONING",
+          "links": [
+            55
+          ],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "OmostLLMChatNode"
+      },
+      "widgets_values": [
+        "Hasune miku and Megurine Luka in a strip club. Hasune miku is taking her bra off. Megurine Luka is completely nude.",
+        4096,
+        0.9,
+        0.6,
+        787223033771793,
+        "randomize"
+      ]
+    },
+    {
+      "id": 31,
+      "type": "easy showAnything",
+      "pos": [
+        -10,
+        1430
+      ],
+      "size": {
+        "0": 652.803955078125,
+        "1": 474.75390625
+      },
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "anything",
+          "type": "*",
+          "link": 55
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "easy showAnything"
+      }
+    },
+    {
+      "id": 90,
+      "type": "VAEDecode",
+      "pos": [
+        1680,
+        -780
+      ],
+      "size": {
+        "0": 210,
+        "1": 46
+      },
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 144
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 145,
+          "slot_index": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            146
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      }
+    },
+    {
+      "id": 91,
+      "type": "SaveImage",
+      "pos": [
+        1940,
+        -790
+      ],
+      "size": {
+        "0": 513.570068359375,
+        "1": 555.1339111328125
+      },
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 146
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "ComfyUI/omost"
+      ]
+    },
+    {
+      "id": 89,
+      "type": "KSampler",
+      "pos": [
+        1320,
+        -780
+      ],
+      "size": {
+        "0": 315,
+        "1": 262
+      },
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 140
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 147
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 142
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 143
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            144
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        12349,
+        "fixed",
+        20,
+        8,
+        "dpmpp_2m_sde_gpu",
+        "karras",
+        1
+      ]
+    },
+    {
+      "id": 88,
+      "type": "OmostGreedyBagsTextEmbeddingNode",
+      "pos": [
+        853,
+        -766
+      ],
+      "size": [
+        336.25857399114807,
+        52.69018210378272
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "canvas_conds",
+          "type": "OMOST_CANVAS_CONDITIONING",
+          "link": 138
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 139,
+          "slot_index": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            147
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "OmostGreedyBagsTextEmbeddingNode"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 74,
+      "type": "OmostDenseDiffusionLayoutNode",
+      "pos": [
+        802,
+        444
+      ],
+      "size": {
+        "0": 327.6000061035156,
+        "1": 66
+      },
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 123,
+          "slot_index": 0
+        },
+        {
+          "name": "canvas_conds",
+          "type": "OMOST_CANVAS_CONDITIONING",
+          "link": 113,
+          "slot_index": 1
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 115,
+          "slot_index": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            124
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            125,
+            135
+          ],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "OmostDenseDiffusionLayoutNode"
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    }
+  ],
+  "links": [
+    [
+      15,
+      19,
+      1,
+      20,
+      0,
+      "CLIP"
+    ],
+    [
+      20,
+      20,
+      0,
+      21,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      25,
+      21,
+      0,
+      27,
+      0,
+      "LATENT"
+    ],
+    [
+      26,
+      19,
+      2,
+      27,
+      1,
+      "VAE"
+    ],
+    [
+      35,
+      33,
+      0,
+      21,
+      3,
+      "LATENT"
+    ],
+    [
+      38,
+      10,
+      0,
+      34,
+      0,
+      "OMOST_LLM"
+    ],
+    [
+      41,
+      35,
+      0,
+      36,
+      0,
+      "IMAGE"
+    ],
+    [
+      55,
+      34,
+      1,
+      31,
+      0,
+      "*"
+    ],
+    [
+      57,
+      32,
+      0,
+      35,
+      0,
+      "OMOST_CANVAS_CONDITIONING"
+    ],
+    [
+      67,
+      32,
+      0,
+      44,
+      0,
+      "OMOST_CANVAS_CONDITIONING"
+    ],
+    [
+      68,
+      19,
+      1,
+      44,
+      1,
+      "CLIP"
+    ],
+    [
+      69,
+      44,
+      0,
+      21,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      72,
+      27,
+      0,
+      47,
+      0,
+      "IMAGE"
+    ],
+    [
+      110,
+      19,
+      0,
+      21,
+      0,
+      "MODEL"
+    ],
+    [
+      113,
+      32,
+      0,
+      74,
+      1,
+      "OMOST_CANVAS_CONDITIONING"
+    ],
+    [
+      115,
+      19,
+      1,
+      74,
+      2,
+      "CLIP"
+    ],
+    [
+      118,
+      20,
+      0,
+      76,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      119,
+      33,
+      0,
+      76,
+      3,
+      "LATENT"
+    ],
+    [
+      120,
+      76,
+      0,
+      77,
+      0,
+      "LATENT"
+    ],
+    [
+      121,
+      19,
+      2,
+      77,
+      1,
+      "VAE"
+    ],
+    [
+      122,
+      77,
+      0,
+      78,
+      0,
+      "IMAGE"
+    ],
+    [
+      123,
+      19,
+      0,
+      74,
+      0,
+      "MODEL"
+    ],
+    [
+      124,
+      74,
+      0,
+      76,
+      0,
+      "MODEL"
+    ],
+    [
+      125,
+      74,
+      1,
+      76,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      128,
+      19,
+      0,
+      82,
+      0,
+      "MODEL"
+    ],
+    [
+      130,
+      20,
+      0,
+      82,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      131,
+      33,
+      0,
+      82,
+      3,
+      "LATENT"
+    ],
+    [
+      132,
+      82,
+      0,
+      83,
+      0,
+      "LATENT"
+    ],
+    [
+      133,
+      19,
+      2,
+      83,
+      1,
+      "VAE"
+    ],
+    [
+      134,
+      83,
+      0,
+      84,
+      0,
+      "IMAGE"
+    ],
+    [
+      135,
+      74,
+      1,
+      82,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      138,
+      32,
+      0,
+      88,
+      0,
+      "OMOST_CANVAS_CONDITIONING"
+    ],
+    [
+      139,
+      19,
+      1,
+      88,
+      1,
+      "CLIP"
+    ],
+    [
+      140,
+      19,
+      0,
+      89,
+      0,
+      "MODEL"
+    ],
+    [
+      142,
+      20,
+      0,
+      89,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      143,
+      33,
+      0,
+      89,
+      3,
+      "LATENT"
+    ],
+    [
+      144,
+      89,
+      0,
+      90,
+      0,
+      "LATENT"
+    ],
+    [
+      145,
+      19,
+      2,
+      90,
+      1,
+      "VAE"
+    ],
+    [
+      146,
+      90,
+      0,
+      91,
+      0,
+      "IMAGE"
+    ],
+    [
+      147,
+      88,
+      0,
+      89,
+      1,
+      "CONDITIONING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.573085533011682,
+      "offset": [
+        824.4183109313109,
+        465.0048236099648
+      ]
+    },
+    "info": {
+      "name": "workflow",
+      "author": "",
+      "description": "",
+      "version": "1",
+      "created": "2024-06-03T15:41:46.655Z",
+      "modified": "2024-06-10T20:58:06.044Z",
+      "software": "ComfyUI"
+    }
+  },
+  "version": 0.4
+}
