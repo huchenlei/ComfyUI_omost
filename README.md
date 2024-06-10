@@ -2,11 +2,12 @@
 
 ComfyUI implementation of [Omost](https://github.com/lllyasviel/Omost), and everything about regional prompt.
 
-## WIP
-The node structure in this repo are subject to change in recent development.
+## News
+- [2024-06-09] Canvas editor added https://github.com/huchenlei/ComfyUI_omost/pull/28
+- [2024-06-09] Add option to connect to external LLM service https://github.com/huchenlei/ComfyUI_omost/pull/25
+- [2024-06-10] Add OmostDenseDiffusion regional prompt backend support (The same as original Omost repo) https://github.com/huchenlei/ComfyUI_omost/pull/27
 
-Some TODO tasks
-- Implement Omost's region area cond ([DenseDiffusion](https://github.com/naver-ai/DenseDiffusion)) https://github.com/huchenlei/ComfyUI_omost/pull/27
+## TODOs
 - Add a progress bar to the Chat node
 - Implement gradient optimization regional prompt
 - Implement multi-diffusion regional prompt
@@ -206,14 +207,45 @@ Here is the a sample JSON output used in the examples:
 </details>
 
 ### Region condition
-Region condition part converts the JSON condition to ComfyUI's area format. Under the hood, it is calling `ConditioningSetMask` node to set non-overlap area for each cond.
-According to https://github.com/lllyasviel/Omost#regional-prompter, original Omost repo is using method 3, while ComfyUI's built-in method is method 2. So expect there to be some
-difference on results. I will implement ComfyUI version of [densediffusion](https://github.com/naver-ai/DenseDiffusion) soon.
+According to https://github.com/lllyasviel/Omost#regional-prompter, there are 6 ways to perform region guided diffusion.
+
+#### Method 1: Multi-diffusion / mixture-of-diffusers
+> These method run UNet on different locations, and then merge the estimated epsilon or x0 using weights or masks for different regions.
+TO be implemented
+
+#### Method 2: Attention decomposition
+> lets say attention is like y=softmax(q@k)@v, then one can achieve attention decomposition like y=mask_A * softmax(q@k_A)@v_A + mask_B * softmax(q@k_B)@v_B where mask_A, k_A, v_A are masks, k, v for region A; mask_B, k_B, v_B are masks, k, v for region B. This method usually yields image quality a bit better than (1) and some people call it Attention Couple or Region Prompter Attention Mode. But this method has a consideration: the mask only makes regional attention numerically possible, but it does not force the UNet to really attend its activations in those regions. That is to say, the attention is indeed masked, but there is no promise that the attention softmax will really be activated in the masked area, and there is also no promise that the attention softmax will never be activated outside the masked area.
+
+This is the built-in regional prompt method in ComfyUI. Use `Omost Layout Cond (ComfyUI-Area)` node for this method.
 
 There are 2 overlap methods:
 - Overlay: The layer on top completely overwrites layer below
 - Average: The overlapped area is the average of all conditions
 ![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/e7d007e4-1175-4435-adf4-a9211937d8c1)
+
+#### Method 3: Attention score manipulation
+> this is a more advanced method compared to (2). It directly manipulates the attention scores to make sure that the activations in mask each area are encouraged and those outside the masks are discouraged. The formulation is like y=softmax(modify(q@k))@v where modify() is a complicated non-linear function with many normalizations and tricks to change the score's distributions. This method goes beyond a simple masked attention to really make sure that those layers get wanted activations. A typical example is Dense Diffusion.
+
+This is the method used by original Omost repo. To use this method:
+- Install https://github.com/huchenlei/ComfyUI_densediffusion
+- Include `Omost Layout Cond (OmostDenseDiffusion)` node to your workflow
+
+Note: ComfyUI_densediffusion does not compose with IPAdapter.
+
+![10 06 2024_16 37 22_REC](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/30cf059d-929a-4f11-8f5d-0160d9c5cd22)
+
+#### Method 4: Gradient optimization
+> since the attention can tell us where each part is corresponding to what prompts, we can split prompts into segments and then get attention activations to each prompt segment. Then we compare those activations with external masks to compute a loss function, and back propagate the gradients. Those methods are usually very high quality but VRAM hungry and very slow. Typical methods are BoxDiff and Attend-and-Excite.
+
+To be implemented
+
+#### Method 5: Use external control models like gligen and InstanceDiffusion
+> Those methods give the highest benchmark performance on region following but will also introduce some style offset to the base model since they are trained parameters. Also, those methods need to convert prompts to vectors and usually do not support prompts of arbitary length (but one can use them together with other attention methods to achieve arbitrary length).
+
+To be implemented
+
+#### Method 6: Some more possible layer options like layerdiffuse and mulan
+To be implemented
 
 Optionally you can also pass the image generated from Omost canvas as initial latent as described in the original Omost repo:
 ![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/f913d141-9045-41fa-998f-770a840adc69)
@@ -222,11 +254,6 @@ Optionally you can also pass the image generated from Omost canvas as initial la
 You can use the built-in region editor on `Omost Load Canvas Conditioning` node to freely manipulate the LLM output.
 ![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/bff0f6d5-ea28-41b2-ae7c-fec29691584f)
 ![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/eb2a692f-3643-434a-a1d9-4443c82629b8)
-
-
-### Compose with other control methods
-You can freely compose the region condition with other control methods like ControlNet/IPAdapter. Following workflow applies an ipadapter model to the character region by selecting the corresponding mask.
-![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/191a5ea1-776a-42da-89ee-fd17a3a08eae)
 
 ### Accelerating LLM
 
