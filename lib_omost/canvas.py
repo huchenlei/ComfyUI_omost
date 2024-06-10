@@ -1,5 +1,6 @@
 import re
 import difflib
+import torch
 import numpy as np
 from typing import TypedDict
 
@@ -375,6 +376,13 @@ class Canvas:
         initial_latent = initial_latent.clip(0, 255).astype(np.uint8)
 
         return initial_latent
+
+    def render_mask(cond: OmostCanvasCondition) -> torch.Tensor:
+        """Returns mask of shape [H, W]"""
+        mask = torch.zeros([90, 90], dtype=torch.float32)
+        a, b, c, d = cond["rect"]
+        mask[a:b, c:d] = 1.0
+        return mask
 
     def process(self) -> list[OmostCanvasCondition]:
         # sort components
