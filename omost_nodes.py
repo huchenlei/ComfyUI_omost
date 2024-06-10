@@ -140,15 +140,15 @@ class OmostLLMHTTPServerNode:
             server_info_url = os.path.join(address, "info")
 
         client = OpenAI(base_url=server_address, api_key="_")
-        
+
         # Get model_id from server info
         server_info = requests.get(server_info_url, timeout=5).json()
         model_id = server_info["model_id"]
-        
+
         # Load tokenizer
         llm_tokenizer = AutoTokenizer.from_pretrained(model_id)
 
-        return (OmostLLMServer(client, model_id, llm_tokenizer), )
+        return (OmostLLMServer(client, model_id, llm_tokenizer),)
 
 
 class OmostLLMChatNode:
@@ -186,9 +186,7 @@ class OmostLLMChatNode:
     CATEGORY = "omost"
 
     def prepare_conversation(
-        self,
-        text: str,
-        conversation: OmostConversation | None = None
+        self, text: str, conversation: OmostConversation | None = None
     ) -> Tuple[OmostConversation, OmostConversation, OmostConversationItem]:
         conversation = conversation or []  # Default to empty list
         system_conversation_item: OmostConversationItem = {
@@ -207,7 +205,7 @@ class OmostLLMChatNode:
         return conversation, input_conversation, user_conversation_item
 
     def run_local_llm(
-        self, 
+        self,
         llm: OmostLLM,
         input_conversation: list[OmostConversationItem],
         max_new_tokens: int,
@@ -245,7 +243,7 @@ class OmostLLMChatNode:
         llm: OmostLLM | OmostLLMServer,
         text: str,
         max_new_tokens: int,
-        top_p: float, 
+        top_p: float,
         temperature: float,
         seed: int,
         conversation: OmostConversation | None = None,
@@ -254,22 +252,28 @@ class OmostLLMChatNode:
         if seed > 0xFFFFFFFF:
             seed = seed & 0xFFFFFFFF
             logger.warning("Seed is too large. Truncating to 32-bit: %d", seed)
-        
-        conversation, input_conversation, user_conversation_item = self.prepare_conversation(text, conversation)
+
+        conversation, input_conversation, user_conversation_item = (
+            self.prepare_conversation(text, conversation)
+        )
 
         if isinstance(llm, OmostLLM):
             generated_text = self.run_local_llm(
                 llm, input_conversation, max_new_tokens, top_p, temperature, seed
             )
         else:
-            generated_text = llm.client.chat.completions.create(
-                model=llm.model_id,
-                messages=input_conversation,
-                top_p=top_p,
-                temperature=temperature,
-                max_tokens=max_new_tokens,
-                seed=seed,
-            ).choices[0].message.content
+            generated_text = (
+                llm.client.chat.completions.create(
+                    model=llm.model_id,
+                    messages=input_conversation,
+                    top_p=top_p,
+                    temperature=temperature,
+                    max_tokens=max_new_tokens,
+                    seed=seed,
+                )
+                .choices[0]
+                .message.content
+            )
 
         output_conversation = [
             *conversation,
