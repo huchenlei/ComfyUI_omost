@@ -1,13 +1,15 @@
 # ComfyUI_omost
 
-ComfyUI implementation of [Omost](https://github.com/lllyasviel/Omost).
+ComfyUI implementation of [Omost](https://github.com/lllyasviel/Omost), and everything about regional prompt.
 
 ## WIP
 The node structure in this repo are subject to change in recent development.
 
 Some TODO tasks
-- Implement Omost's region area cond ([DenseDiffusion](https://github.com/naver-ai/DenseDiffusion))
+- Implement Omost's region area cond ([DenseDiffusion](https://github.com/naver-ai/DenseDiffusion)) https://github.com/huchenlei/ComfyUI_omost/pull/27
 - Add a progress bar to the Chat node
+- Implement gradient optimization regional prompt
+- Implement multi-diffusion regional prompt
 
 ## How to use
 
