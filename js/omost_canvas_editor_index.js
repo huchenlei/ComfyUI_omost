@@ -76,7 +76,8 @@ class OmostCanvasDialog extends ComfyDialog {
 
     createLayout() {
         this.iframeElement = $el("iframe", {
-            src: "http://localhost:5174",
+            // Change to http://localhost:5174 for local dev
+            src: "https://huchenlei.github.io/omost_region_editor",
             style: {
                 width: "100%",
                 height: "100%",
