@@ -65,12 +65,12 @@ class OmostCanvasDialog extends ComfyDialog {
         if (!this.is_layout_created) {
             this.createLayout();
             this.is_layout_created = true;
+            await this.waitIframeReady();
         }
 
         const targetNode = ComfyApp.clipspace_return_node;
         const textAreaElement = targetNode.widgets[0].element;
         this.element.style.display = "flex";
-        await this.waitIframeReady();
         this.setCanvasJSONString(textAreaElement.value);
     }
 
