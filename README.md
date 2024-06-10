@@ -211,6 +211,7 @@ According to https://github.com/lllyasviel/Omost#regional-prompter, there are 6 
 
 #### Method 1: Multi-diffusion / mixture-of-diffusers
 > These method run UNet on different locations, and then merge the estimated epsilon or x0 using weights or masks for different regions.
+
 TO be implemented
 
 #### Method 2: Attention decomposition
