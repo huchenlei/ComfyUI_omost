@@ -5,6 +5,10 @@ ComfyUI implementation of [Omost](https://github.com/lllyasviel/Omost).
 ## WIP
 The node structure in this repo are subject to change in recent development.
 
+Some TODO tasks
+- Implement Omost's region area cond ([DenseDiffusion](https://github.com/naver-ai/DenseDiffusion))
+- Add a progress bar to the Chat node
+
 ## How to use
 
 As you can see from the screenshot, there are 2 parts of omost:
@@ -212,11 +216,12 @@ There are 2 overlap methods:
 Optionally you can also pass the image generated from Omost canvas as initial latent as described in the original Omost repo:
 ![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/f913d141-9045-41fa-998f-770a840adc69)
 
+### Edit Region condition
+You can use the built-in region editor on `Omost Load Canvas Conditioning` node to freely manipulate the LLM output.
+![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/bff0f6d5-ea28-41b2-ae7c-fec29691584f)
+![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/eb2a692f-3643-434a-a1d9-4443c82629b8)
+
+
 ### Compose with other control methods
 You can freely compose the region condition with other control methods like ControlNet/IPAdapter. Following workflow applies an ipadapter model to the character region by selecting the corresponding mask.
 ![image](https://github.com/huchenlei/ComfyUI_omost/assets/20929282/191a5ea1-776a-42da-89ee-fd17a3a08eae)
-
-## TODOs
-- Implement Omost's region area cond ([DenseDiffusion](https://github.com/naver-ai/DenseDiffusion))
-- Add a progress bar to the Chat node
-- A region condition editor for easier manipulation post generation
