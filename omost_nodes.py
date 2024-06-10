@@ -486,6 +486,46 @@ class OmostDenseDiffusionLayoutNode:
         return self.dense_diffusion_apply_node.apply(work_model)
 
 
+class OmostGreedyBagsTextEmbeddingNode:
+    """Just encode the omost canvas conditions with greedy bags approach.
+    Ignoring region conditions."""
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "canvas_conds": ("OMOST_CANVAS_CONDITIONING",),
+                "clip": ("CLIP",),
+            },
+        }
+
+    RETURN_TYPES = ("CONDITIONING",)
+    FUNCTION = "layout_cond"
+    CATEGORY = "omost"
+
+    def layout_cond(
+        self,
+        canvas_conds: list[OmostCanvasCondition],
+        clip: CLIP,
+    ) -> tuple[ComfyUIConditioning]:
+        conds: ComfyUIConditioning = [
+            PromptEncoding.encode_bag_of_subprompts_greedy(
+                clip, canvas_cond["prefixes"], canvas_cond["suffixes"]
+            )[0]
+            for canvas_cond in canvas_conds
+        ]
+        assert len(conds) > 0
+
+        return ([
+            [
+                # cond
+                torch.cat([cond[0] for cond in conds], dim=1),
+                # pooled_output
+                {"pooled_output": conds[0][1]["pooled_output"]},
+            ]
+        ],)
+
+
 class OmostComfyLayoutNode:
     """Apply Omost layout with ComfyUI's area condition system."""
 
@@ -638,6 +678,7 @@ NODE_CLASS_MAPPINGS = {
     "OmostLLMLoaderNode": OmostLLMLoaderNode,
     "OmostLLMHTTPServerNode": OmostLLMHTTPServerNode,
     "OmostLLMChatNode": OmostLLMChatNode,
+    "OmostGreedyBagsTextEmbeddingNode": OmostGreedyBagsTextEmbeddingNode,
     "OmostLayoutCondNode": OmostComfyLayoutNode,
     "OmostDenseDiffusionLayoutNode": OmostDenseDiffusionLayoutNode,
     "OmostLoadCanvasConditioningNode": OmostLoadCanvasConditioningNode,
@@ -648,6 +689,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "OmostLLMLoaderNode": "Omost LLM Loader",
     "OmostLLMHTTPServerNode": "Omost LLM HTTP Server",
     "OmostLLMChatNode": "Omost LLM Chat",
+    "OmostGreedyBagsTextEmbeddingNode": "Omost Greedy Bags Text Embedding",
     "OmostLayoutCondNode": "Omost Layout Cond (ComfyUI-Area)",
     "OmostDenseDiffusionLayoutNode": "Omost Layout Cond (OmostDenseDiffusion)",
     "OmostLoadCanvasConditioningNode": "Omost Load Canvas Conditioning",
