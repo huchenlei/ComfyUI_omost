@@ -1,3 +1,4 @@
+from __future__ import annotations
 import re
 import difflib
 import torch
@@ -245,19 +246,21 @@ class OmostCanvasCondition(TypedDict):
 
 class Canvas:
     @staticmethod
-    def from_bot_response(response: str):
+    def from_bot_response(response: str) -> Canvas:
         matched = re.search(r"```python\n(.*?)\n```", response, re.DOTALL)
         assert matched, f"Response does not contain codes!\n{response}"
         code_content = matched.group(1)
         assert (
             "canvas = Canvas()" in code_content
         ), f"Code block must include valid canvas var!\n{response}"
+        return Canvas.from_python_code(code_content)
+
+    @staticmethod
+    def from_python_code(code: str) -> Canvas:
         local_vars = {"Canvas": Canvas}
-        exec(code_content, {}, local_vars)
+        exec(code, {}, local_vars)
         canvas = local_vars.get("canvas", None)
-        assert isinstance(
-            canvas, Canvas
-        ), f"Code block must produce valid canvas var!\n{response}"
+        assert isinstance(canvas, Canvas), "Code must produce valid canvas var!"
         return canvas
 
     def __init__(self):
