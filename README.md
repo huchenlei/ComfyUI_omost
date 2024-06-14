@@ -298,6 +298,7 @@ For more information about TGI, refer to the official documentation: https://hug
 Utilizing a quantized GGUF model can also lead to significant performance improvements.
 
 1. **Download the Model**
+   
    You can download the [omost-llama-3-8b-Q8_0-GGUF](https://huggingface.co/zhaijunxiao/omost-llama-3-8b-Q8_0-GGUF) model here. Alternatively, you can quantize other models yourself using the [GGUF-my-repo](https://huggingface.co/spaces/ggml-org/gguf-my-repo).
 
 2. **Start the HTTP Server**
