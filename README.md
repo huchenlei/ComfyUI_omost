@@ -311,5 +311,7 @@ Utilizing a quantized GGUF model can also lead to significant performance improv
 3. **Add a Node**
 
    Add an `Omost LLM HTTP Server` node and enter the service address of the LLM.
+   ![image](https://github.com/zhaijunxiao/ComfyUI_omost/assets/40786117/cfbcf41c-e5cd-4b40-b8ec-1a492856abf6)
+
 
 
