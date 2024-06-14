@@ -1,7 +1,7 @@
 [project]
 name = "comfyui_omost"
 description = "Your image is almost there!"
-version = "1.0.1"
+version = "1.0.2"
 license = "LICENSE"
 dependencies = ["transformers>=4.41.1", "bitsandbytes>=0.43.1", "protobuf>=3.20", "torch", "openai", "requests"]
 
