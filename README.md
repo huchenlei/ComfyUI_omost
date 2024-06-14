@@ -309,6 +309,13 @@ Utilizing a quantized GGUF model can also lead to significant performance improv
    ./llama-server -m ../model/omost-llama-3-8b-q8_0.gguf -ngl 33 -c 8192 --port 8080
    ```
 
+    Alternatively, you can directly use llama-cpp-python to start an HTTP Server.
+
+    Reference: [llama-cpp-python OpenAI-Compatible Web Server](https://github.com/abetlen/llama-cpp-python?tab=readme-ov-file#openai-compatible-web-server)
+
+    However, in my tests on the 3090Ti, using llama-server directly yields better performance. When generating an image, using llama-cpp-python takes approximately 50-60 seconds, whereas using llama-server takes around 30-40 seconds.
+
+
 3. **Add a Node**
 
    Add an `Omost LLM HTTP Server` node and enter the service address of the LLM.
