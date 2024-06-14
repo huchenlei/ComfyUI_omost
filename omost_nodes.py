@@ -65,7 +65,6 @@ class OmostLLM(NamedTuple):
 class OmostLLMServer(NamedTuple):
     client: OpenAI
     model_id: str
-    tokenizer: AutoTokenizer
 
 
 ComfyUIConditioning = list  # Dummy type definitions for ComfyUI
@@ -127,6 +126,15 @@ class OmostLLMHTTPServerNode:
         return {
             "required": {
                 "address": ("STRING", {"multiline": True}),
+                "api_type":(
+                    [
+                        "OpenAI",
+                        "TGI"
+                    ],
+                    {
+                        "default": "OpenAI"
+                    }
+                )
             }
         }
 
@@ -134,25 +142,31 @@ class OmostLLMHTTPServerNode:
     FUNCTION = "init_client"
     CATEGORY = "omost"
 
-    def init_client(self, address: str) -> Tuple[OmostLLMServer]:
+    def init_client(self, address: str, api_type: str) -> Tuple[OmostLLMServer]:
         """Initialize LLM client with HTTP server address."""
-        if address.endswith("v1"):
-            server_address = address
-            server_info_url = address.replace("v1", "info")
-        else:
-            server_address = os.path.join(address, "v1")
-            server_info_url = os.path.join(address, "info")
+
+        if api_type == "OpenAI":
+            if address.endswith("v1"):
+                server_address = address
+            else:
+                server_address = os.path.join(address, "v1")
+        
+            model_id = ""
+
+        elif api_type == "TGI":
+            if address.endswith("v1"):
+                server_address = address
+                server_info_url = address.replace("v1", "info")
+            else:
+                server_address = os.path.join(address, "v1")
+                server_info_url = os.path.join(address, "info")
+            #Get model_id from server info
+            server_info = requests.get(server_info_url, timeout=5).json()
+            model_id = server_info["model_id"]
 
         client = OpenAI(base_url=server_address, api_key="_")
 
-        # Get model_id from server info
-        server_info = requests.get(server_info_url, timeout=5).json()
-        model_id = server_info["model_id"]
-
-        # Load tokenizer
-        llm_tokenizer = AutoTokenizer.from_pretrained(model_id)
-
-        return (OmostLLMServer(client, model_id, llm_tokenizer),)
+        return (OmostLLMServer(client, model_id),)
 
 
 class OmostLLMChatNode:

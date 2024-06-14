@@ -291,3 +291,35 @@ curl 127.0.0.1:8080/generate \
 
 
 For more information about TGI, refer to the official documentation: https://huggingface.co/docs/text-generation-inference/quicktour
+
+
+### Using llama.cpp HTTP Server
+
+Utilizing a quantized GGUF model can also lead to significant performance improvements.
+
+1. **Download the Model**
+   
+   You can download the [omost-llama-3-8b-Q8_0-GGUF](https://huggingface.co/zhaijunxiao/omost-llama-3-8b-Q8_0-GGUF) model here. Alternatively, you can quantize other models yourself using the [GGUF-my-repo](https://huggingface.co/spaces/ggml-org/gguf-my-repo).
+
+2. **Start the HTTP Server**
+
+   Clone and compile [llama.cpp](https://github.com/ggerganov/llama.cpp). Then, start the service with the following command:
+
+   ```sh
+   ./llama-server -m ../model/omost-llama-3-8b-q8_0.gguf -ngl 33 -c 8192 --port 8080
+   ```
+
+    Alternatively, you can directly use llama-cpp-python to start an HTTP Server.
+
+    Reference: [llama-cpp-python OpenAI-Compatible Web Server](https://github.com/abetlen/llama-cpp-python?tab=readme-ov-file#openai-compatible-web-server)
+
+    However, in my tests on the 3090Ti, using llama-server directly yields better performance. When generating an image, using llama-cpp-python takes approximately 50-60 seconds, whereas using llama-server takes around 30-40 seconds.
+
+
+3. **Add a Node**
+
+   Add an `Omost LLM HTTP Server` node and enter the service address of the LLM.
+   ![image](https://github.com/zhaijunxiao/ComfyUI_omost/assets/40786117/cfbcf41c-e5cd-4b40-b8ec-1a492856abf6)
+
+
+
