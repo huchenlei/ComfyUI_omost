@@ -24,7 +24,7 @@ class CLIPTokens(NamedTuple):
         return len(self.clip_l_tokens)
 
     def __repr__(self) -> str:
-        return f"CLIPTokens(clip_l_tokens({len(self.clip_l_tokens)}), clip_g_tokens={len(self.clip_g_tokens) if self.clip_g_tokens else None}, clip_g_tokens={len(self.clip_t5xxl_tokens) if self.clip_t5xxl_tokens else None})"
+        return f"CLIPTokens(clip_l_tokens({len(self.clip_l_tokens)}), clip_g_tokens={len(self.clip_g_tokens) if self.clip_g_tokens else None}, clip_t5xxl_tokens={len(self.clip_t5xxl_tokens) if self.clip_t5xxl_tokens else None})"
 
     def __add__(self, other: CLIPTokens) -> CLIPTokens:
         if self.clip_g_tokens is None or other.clip_g_tokens is None:
