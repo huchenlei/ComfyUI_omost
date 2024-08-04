@@ -27,6 +27,7 @@ from .lib_omost.greedy_encode import (
     CLIPTokens,
     EncoderOutput,
     SPECIAL_TOKENS,
+    SPECIAL_TOKENS_T5XXL
 )
 
 
@@ -74,6 +75,7 @@ ComfyCLIPTokensWithWeight = list[Tuple[int, float]]
 class ComfyCLIPTokens(TypedDict):
     l: list[ComfyCLIPTokensWithWeight]
     g: NotRequired[list[ComfyCLIPTokensWithWeight]]
+    t5xxl: NotRequired[list[ComfyCLIPTokensWithWeight]]
 
 
 # End of type definitions.
@@ -112,7 +114,7 @@ class OmostLLMLoaderNode:
             llm_name,
             torch_dtype=dtype,  # This is computation type, not load/memory type. The loading quant type is baked in config.
             token=HF_TOKEN,
-            device_map="auto",  # This will load model to gpu with an offload system
+            device_map="cuda:0",  # This will load model to gpu with an offload system
             trust_remote_code=True,
         )
         llm_tokenizer = AutoTokenizer.from_pretrained(llm_name, token=HF_TOKEN)
@@ -390,13 +392,14 @@ class PromptEncoding:
         by the original Omost repo."""
 
         def convert_comfy_tokens(
-            comfy_tokens: list[ComfyCLIPTokensWithWeight],
+            comfy_tokens: list[ComfyCLIPTokensWithWeight], t5xxl:bool = False
         ) -> list[int]:
             assert len(comfy_tokens) >= 1
             tokens: list[int] = [token for token, _ in comfy_tokens[0]]
             # Strip the first token which is the CLIP prefix.
             # Strip padding tokens.
-            return tokens[1 : tokens.index(SPECIAL_TOKENS["end"])]
+            token_set = SPECIAL_TOKENS_T5XXL if t5xxl else SPECIAL_TOKENS
+            return tokens[1 : tokens.index(token_set["end"])]
 
         def convert_to_comfy_tokens(tokens: CLIPTokens) -> ComfyCLIPTokens:
             return {
@@ -404,6 +407,11 @@ class PromptEncoding:
                 "g": (
                     [[(token, 1.0) for token in tokens.clip_g_tokens]]
                     if tokens.clip_g_tokens is not None
+                    else None
+                ),
+                "t5xxl": (
+                    [[(token, 1.0) for token in tokens.clip_t5xxl_tokens]]
+                    if tokens.clip_t5xxl_tokens is not None
                     else None
                 ),
             }
@@ -414,6 +422,9 @@ class PromptEncoding:
                 clip_l_tokens=convert_comfy_tokens(tokens["l"]),
                 clip_g_tokens=(
                     convert_comfy_tokens(tokens.get("g")) if "g" in tokens else None
+                ),
+                clip_t5xxl_tokens=(
+                    convert_comfy_tokens(tokens.get("t5xxl"),t5xxl=True) if "t5xxl" in tokens else None
                 ),
             )
 
