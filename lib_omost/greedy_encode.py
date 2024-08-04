@@ -13,17 +13,18 @@ class SpecialTokens(TypedDict):
 class CLIPTokens(NamedTuple):
     clip_l_tokens: list[int]
     clip_g_tokens: list[int] | None = None
+    clip_t5xxl_tokens: list[int] | None = None
 
     @classmethod
     def empty_tokens(cls) -> CLIPTokens:
-        return CLIPTokens(clip_l_tokens=[], clip_g_tokens=[])
+        return CLIPTokens(clip_l_tokens=[], clip_g_tokens=[], clip_t5xxl_tokens=[])
 
     @property
     def length(self) -> int:
         return len(self.clip_l_tokens)
 
     def __repr__(self) -> str:
-        return f"CLIPTokens(clip_l_tokens({len(self.clip_l_tokens)}), clip_g_tokens={len(self.clip_g_tokens) if self.clip_g_tokens else None})"
+        return f"CLIPTokens(clip_l_tokens({len(self.clip_l_tokens)}), clip_g_tokens={len(self.clip_g_tokens) if self.clip_g_tokens else None}, clip_g_tokens={len(self.clip_t5xxl_tokens) if self.clip_t5xxl_tokens else None})"
 
     def __add__(self, other: CLIPTokens) -> CLIPTokens:
         if self.clip_g_tokens is None or other.clip_g_tokens is None:
@@ -31,21 +32,30 @@ class CLIPTokens(NamedTuple):
         else:
             clip_g_tokens = self.clip_g_tokens + other.clip_g_tokens
 
+        if self.clip_t5xxl_tokens is None or other.clip_t5xxl_tokens is None:
+            clip_t5xxl_tokens = None
+        else:
+            clip_t5xxl_tokens = self.clip_t5xxl_tokens + other.clip_t5xxl_tokens
+        
         return CLIPTokens(
             clip_l_tokens=self.clip_l_tokens + other.clip_l_tokens,
             clip_g_tokens=clip_g_tokens,
+            clip_t5xxl_tokens=clip_t5xxl_tokens,
         )
 
     @staticmethod
-    def _get_77_tokens(subprompt_inds: list[int]) -> list[int]:
+    def _get_77_tokens(subprompt_inds: list[int],t5xxl: bool = False) -> list[int]:
         # Note that all subprompt are theoretically less than 75 tokens (without bos/eos)
+        token_set = SPECIAL_TOKENS_T5XXL if t5xxl else SPECIAL_TOKENS
+        max_len = min(510,len(subprompt_inds)) if t5xxl else 75
+        start_token = [] if t5xxl else [token_set["start"]]
         result = (
-            [SPECIAL_TOKENS["start"]]
-            + subprompt_inds[:75]
-            + [SPECIAL_TOKENS["end"]]
-            + [SPECIAL_TOKENS["pad"]] * 75
+            start_token
+            + subprompt_inds[:max_len]
+            + [token_set["end"]]
+            + [token_set["pad"]] * max_len
         )
-        return result[:77]
+        return result[:max_len+2]
 
     def clamp_to_77_tokens(self) -> CLIPTokens:
         return CLIPTokens(
@@ -53,6 +63,11 @@ class CLIPTokens(NamedTuple):
             clip_g_tokens=(
                 self._get_77_tokens(self.clip_g_tokens)
                 if self.clip_g_tokens
+                else None
+            ),
+            clip_t5xxl_tokens=(
+                self._get_77_tokens(self.clip_t5xxl_tokens,t5xxl=True)
+                if self.clip_t5xxl_tokens
                 else None
             ),
         )
@@ -69,6 +84,7 @@ EncodeFunc = Callable[[CLIPTokens], EncoderOutput]
 
 # ComfyUI protocol. See sd1_clip.py/sdxl_clip.py for the actual implementation.
 SPECIAL_TOKENS: SpecialTokens = {"start": 49406, "end": 49407, "pad": 49407}
+SPECIAL_TOKENS_T5XXL: SpecialTokens = {"start": 0, "end": 1, "pad": 0}
 
 
 def greedy_partition(items: list[CLIPTokens], max_sum: int) -> list[list[CLIPTokens]]:
